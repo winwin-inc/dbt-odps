@@ -30,8 +30,8 @@ class OdpsRelation(BaseRelation):
 
     @classmethod
     def create(cls, database=None, schema=None, identifier=None, type=None, **kwargs):
-        logger.error(f" database {database} . schema {schema} . identifier {identifier} . type {type} . kwargs {kwargs}")
-
+        # logger.error(f"OdpsRelation.create  database {database} . schema {schema} . identifier {identifier} . type {type} . kwargs {kwargs}")
+        
         if schema != "default":
             kwargs.update(
                 {

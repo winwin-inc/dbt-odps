@@ -1,5 +1,7 @@
 import agate
 from dataclasses import dataclass
+import dbt
+import dbt.exceptions
 from dbt.adapters.sql import SQLAdapter
 from dbt.adapters.base import AdapterConfig
 from dbt.adapters.base.relation import BaseRelation, InformationSchema
@@ -123,23 +125,69 @@ class ODPSAdapter(SQLAdapter):
     ) -> List[OdpsRelation]:
         logger.error(f"list_relations_without_caching : {schema_relation},{schema_relation.schema}")
 
-        kwargs = {}
-        if schema_relation and schema_relation.schema != "default":
-            kwargs["schema"] = schema_relation.schema
+        """Get a list of Relation(table or view) by SQL directly
+        Use different SQL statement for view/table
+        """
+        kwargs = {"schema": schema_relation}
+        try:
+            result_tables = self.execute_macro("hive__list_tables_without_caching", kwargs=kwargs)
+            result_views = self.execute_macro("hive__list_views_without_caching", kwargs=kwargs)
+        except dbt.exceptions.DbtRuntimeError as e:
+            errmsg = getattr(e, "msg", "")
+            if f"Database '{schema_relation}' not found" in errmsg:
+                return []
+            else:
+                description = "Error while retrieving information about"
+                logger.debug(f"{description} {schema_relation}: {e.msg}")
+                return []
 
-        
-        # print(f"{kwargs}")
-        for key, value in kwargs.items():
-            logger.error(f"kwargs : {key}: {value}")
+        # hive2
+        # Collect table/view separately
+        # Unfortunatly, Hive2 does not distincguish table/view
+        # Currently views are also listed in `show tables`
+        # https://issues.apache.org/jira/browse/HIVE-14558
+        # all_rows = result_tables
+        # relations = []
+        # for row in all_rows:
+        #    relation_type = self.get_relation_type(f"{schema_relation}.{row['tab_name']}")
+        #    relations.append(
+        #         self.Relation.create(
+        #            schema=schema_relation.schema,
+        #            identifier=row['tab_name'],
+        #            type=relation_type
+        #        )
+        #    )
 
-            
+        # in Hive 2, result_tables has table + view, result_views only has views
+        # so we build a result_tables_without_view that doesnot have views
+
+        result_tables_without_view = []
+        for row in result_tables:
+            # check if this table is view
+            is_view = (
+                len(list(filter(lambda x: x["tab_name"] == row["tab_name"], result_views))) == 1
+            )
+            if not is_view:
+                result_tables_without_view.append(row)
+
         relations = []
-        for table in self.odps.list_tables(**kwargs):
-            try:
-                print(f"""{table}""")
-                relations.append(OdpsRelation.from_odps_table(table))
-            except NoSuchObject:
-                pass
+        for row in result_tables_without_view:
+            relations.append(
+                self.Relation.create(
+                    schema=schema_relation.schema,
+                    identifier=row["tab_name"],
+                    type="table",
+                )
+            )
+        for row in result_views:
+            relations.append(
+                self.Relation.create(
+                    schema=schema_relation.schema,
+                    identifier=row["tab_name"],
+                    type="view",
+                )
+            )
+
         return relations
 
     def get_odps_table_by_relation(self, relation: OdpsRelation):
@@ -176,6 +224,8 @@ class ODPSAdapter(SQLAdapter):
         schemas: Set[str],
         manifest: Manifest,
     ) -> agate.Table:
+        # raise Exception('_get_one_catalog')
+        logger.info(f"_get_one_catalog   schemas {schemas} manifest:{manifest}")
         rows = []
         for schema in schemas:
             for table in self.odps.list_tables(project=information_schema.database, schema=schema):
