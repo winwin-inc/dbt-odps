@@ -2,20 +2,7 @@ from dataclasses import dataclass, field
 from dbt.adapters.base.relation import BaseRelation
 from dbt.contracts.relation import Policy, RelationType
 from odps.models.table import Table
-import sys
-import logging
-logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler("app.log"),
-            logging.StreamHandler(sys.stdout),
-        ],
-)
-
-logger = logging.getLogger(__name__)  # 创建适配器专用的日志记录器
-
-
+from dbt.adapters.odps.utils import print_method_call,logger
 @dataclass
 class OdpsIncludePolicy(Policy):
     database: bool = True
@@ -29,6 +16,7 @@ class OdpsRelation(BaseRelation):
     quote_character: str = "`"
 
     @classmethod
+    @print_method_call
     def create(cls, database=None, schema=None, identifier=None, type=None, **kwargs):
         # logger.error(f"OdpsRelation.create  database {database} . schema {schema} . identifier {identifier} . type {type} . kwargs {kwargs}")
         
@@ -41,6 +29,7 @@ class OdpsRelation(BaseRelation):
         return super().create(database, schema, identifier, type, **kwargs)
 
     @classmethod
+    @print_method_call
     def from_odps_table(cls, table: Table):
         identifier = table.name
         schema = table.get_schema()

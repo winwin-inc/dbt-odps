@@ -1,7 +1,9 @@
 from odps.dbapi import Connection, Cursor
+from dbt.adapters.odps.utils import print_method_call,logger
 
 
 class ODPSCursor(Cursor):
+    @print_method_call
     def execute(self, operation, parameters=None, **kwargs):
         for k in ["async", "async_"]:
             if k in kwargs:

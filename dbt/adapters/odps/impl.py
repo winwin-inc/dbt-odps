@@ -14,18 +14,9 @@ from odps.errors import NoSuchObject, ODPSError
 from .relation import OdpsRelation
 from .colums import OdpsColumn
 from .connections import ODPSConnectionManager, ODPSCredentials
-import logging
-import sys
-logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler("app.log"),
-            logging.StreamHandler(sys.stdout),
-        ],
-)
+from dbt.adapters.odps.utils import print_method_call,logger
+from dbt.clients import agate_helper
 
-logger = logging.getLogger(__name__)  # 创建适配器专用的日志记录器
 
 LIST_RELATIONS_MACRO_NAME = "list_relations_without_caching"
 SHOW_CREATE_TABLE_MACRO_NAME = "show_create_table"
@@ -82,7 +73,8 @@ class ODPSAdapter(SQLAdapter):
         """the interval could be one of [dd, mm, yyyy, mi, ss, year, month, mon, day, hour, hh]'"""
         # return f"{add_to} + interval '{number} {interval}'"
         return f"dateadd({add_to}, {number}, '{interval}')"
-
+    
+    @print_method_call
     def create_schema(self, relation: BaseRelation) -> None:
         """ODPS does not support schemas, so this is a no-op"""
         try:
@@ -105,11 +97,12 @@ class ODPSAdapter(SQLAdapter):
 
     def quote(self, identifier):
         return "`{}`".format(identifier)
-
+    
+    @print_method_call
     def check_schema_exists(self, database: str, schema: str) -> bool:
         """always return true, as ODPS does not have schemas."""
         return True
-
+    @print_method_call
     def list_schemas(self, database: str) -> List[str]:
         try:
             return [schema.name for schema in self.odps.list_schemas(database)]
@@ -118,13 +111,12 @@ class ODPSAdapter(SQLAdapter):
                 return ["default"]
             else:
                 raise e
-
+    @print_method_call
     def list_relations_without_caching(
         self,
         schema_relation: OdpsRelation = None,
     ) -> List[OdpsRelation]:
-        logger.error(f"list_relations_without_caching : {schema_relation},{schema_relation.schema}")
-
+       
         """Get a list of Relation(table or view) by SQL directly
         Use different SQL statement for view/table
         """
@@ -189,14 +181,15 @@ class ODPSAdapter(SQLAdapter):
             )
 
         return relations
-
+    
+    @print_method_call
     def get_odps_table_by_relation(self, relation: OdpsRelation):
         return self.get_odps_table_if_exists(
             relation.identifier,
             project=relation.database,
             schema=relation.schema,
         )
-
+    @print_method_call
     def get_odps_table_if_exists(self, name, project=None, schema=None) -> Optional[Table]:
         kwargs = {
             "name": name,
@@ -209,15 +202,62 @@ class ODPSAdapter(SQLAdapter):
             return self.odps.get_table(**kwargs)
 
         return None
-
+    
+    # override
+    @print_method_call
     def get_columns_in_relation(self, relation: OdpsRelation):
+        # logger.debug(f"impl.py get_columns_in_relation {relation}")
+
         odps_table = self.get_odps_table_by_relation(relation)
         return (
             [OdpsColumn.from_odps_column(column) for column in odps_table.table_schema.simple_columns]
             if odps_table
             else []
         )
+    
+    def _get_one_catalog(
+        self,
+        information_schema,
+        schemas,
+        manifest,
+    ) -> agate.Table:
+        """Get ONE catalog. Used by get_catalog
 
+        manifest is used to run the method in other context's
+        threadself.get_columns_in_relation
+        """
+        if len(schemas) != 1:
+            dbt.exceptions.raise_compiler_error(
+                f"Expected only one schema in Hive _get_one_catalog, found " f"{schemas}"
+            )
+
+        database = information_schema.database
+        schema = list(schemas)[0]
+
+        schema_relation = self.Relation.create(
+            database=database,
+            schema=schema,
+            identifier="",
+            quote_policy=self.config.quoting,
+        ).without_identifier()
+
+        columns: List[Dict[str, Any]] = []
+        for relation in self.list_relations(database, schema):
+            logger.debug(f"Getting table schema for relation {relation}")
+            columns.extend(self._get_columns_for_catalog(relation))
+
+        if len(columns) > 0:
+            text_types = agate_helper.build_type_tester(["table_owner", "table_database"])
+        else:
+            text_types = []
+
+        return agate.Table.from_object(
+            columns,
+            column_types=text_types,
+        )
+
+    """ 
+    @print_method_call
     def _get_one_catalog(
         self,
         information_schema: InformationSchema,
@@ -225,7 +265,7 @@ class ODPSAdapter(SQLAdapter):
         manifest: Manifest,
     ) -> agate.Table:
         # raise Exception('_get_one_catalog')
-        logger.info(f"_get_one_catalog   schemas {schemas} manifest:{manifest}")
+        # logger.info(f"_get_one_catalog   schemas {schemas} manifest:{manifest}")
         rows = []
         for schema in schemas:
             for table in self.odps.list_tables(project=information_schema.database, schema=schema):
@@ -258,6 +298,6 @@ class ODPSAdapter(SQLAdapter):
             ],
         )
         return table
-
-
+    """
+    
 # may require more build out to make more user friendly to confer with team and community.

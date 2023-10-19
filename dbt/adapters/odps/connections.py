@@ -7,20 +7,8 @@ from dbt.adapters.sql import SQLConnectionManager
 from dbt.contracts.connection import AdapterResponse, ConnectionState, AdapterRequiredConfig
 from typing import Optional, Dict
 from .dbapi import ODPSConnection
-import logging
-import sys
-logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler("app.log"),
-            logging.StreamHandler(sys.stdout),
-        ],
-)
-
-logger = logging.getLogger(__name__)  # 创建适配器专用的日志记录器
-
-
+from dbt.adapters.odps.utils import print_method_call,logger
+import traceback
 @dataclass
 class ODPSCredentials(Credentials):
     """
@@ -85,6 +73,7 @@ class ODPSConnectionManager(SQLConnectionManager):
                 raise dbt.exceptions.DbtRuntimeError(str(exc))
 
     @classmethod
+    @print_method_call
     def open(cls, connection):
         """
         Receives a connection object and a Credentials object
@@ -96,7 +85,7 @@ class ODPSConnectionManager(SQLConnectionManager):
 
         credentials: ODPSCredentials = connection.credentials
 
-        logger.error(f"open credentials: {credentials }")
+        logger.debug(f"open credentials: {credentials }")
 
         try:
             kwargs = dict(
@@ -109,16 +98,22 @@ class ODPSConnectionManager(SQLConnectionManager):
             if credentials.schema != "default":
                 kwargs["schema"] = credentials.schema
 
-            logger.error(f"open ODPSConnection kwargs: {kwargs }")    
+            # logger.debug(f"open ODPSConnection kwargs: {kwargs }")    
             handle = ODPSConnection(**kwargs)
-
+            #  traceback.print_exc()
+            #raise dbt.exceptions.FailedToConnectError(f"Project {credentials.database} does not exist.")
             if not handle.odps.exist_project(credentials.database):
                 logger.debug("Project {} does not exist".format(credentials.database))
                 raise dbt.exceptions.FailedToConnectError(f"Project {credentials.database} does not exist.")
 
             connection.state = "open"
             connection.handle = handle
+
+            # raise Exception("ODPSConnectionManager.open ")
+            # logger.error(f"ODPSConnectionManager.open {traceback.format_stack() }")
+
         except Exception as exc:
+            raise dbt.exceptions.FailedToConnectError(f"Project does not exist.")
             logger.debug("Error opening connection: {}".format(exc))
             connection.handle = None
             connection.state = "fail"
@@ -126,6 +121,7 @@ class ODPSConnectionManager(SQLConnectionManager):
         return connection
 
     @classmethod
+    @print_method_call
     def get_response(cls, cursor) -> AdapterResponse:
         # ODPS does not support cursor and rowcount
         # https://github.com/dbt-labs/dbt-spark/issues/142
