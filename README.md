@@ -39,7 +39,7 @@ DBT features:
 ### Install DBT-ODPS
 
 ```bash
-python -m pip install dbt-odps
+python setup.py install --force 
 ```
 
 ### How to Configure?
