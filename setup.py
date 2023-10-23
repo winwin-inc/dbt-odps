@@ -28,7 +28,7 @@ def _get_dbt_core_version():
     pre = parts["prekind"] + "1" if parts["prekind"] else ""
     return f"{minor}{pre}"
 
-package_name = "dbt-odps"
+package_name = "winwin-odps-dbt"
 description = """The ODPS (MaxCompute)  adapter plugin for dbt"""
 dbt_core_version = _get_dbt_core_version()
 
@@ -38,8 +38,8 @@ setup(
     description=description,
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="eavea",
-    author_email="lijingyu68@gmail.com",
+    author="leezhongshan",
+    author_email="leezhongshan0316@gmail.com",
     url="https://github.com/ai-excelsior/F2AI",
     packages=find_namespace_packages(include=["dbt", "dbt.*"]),
     include_package_data=True,
