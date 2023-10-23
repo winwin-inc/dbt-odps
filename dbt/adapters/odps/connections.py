@@ -50,7 +50,7 @@ class ODPSConnectionManager(SQLConnectionManager):
 
     def __init__(self, profile: AdapterRequiredConfig):
         # disable query comment for odps, since it's not supported
-        profile.query_comment.comment = None
+        # profile.query_comment.comment = None
 
         super().__init__(profile)
 
