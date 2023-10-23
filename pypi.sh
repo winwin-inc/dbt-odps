@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # build
-rm -rf build dist winwin_odps_dbt.egg-info
+rm -rf build dist *.egg-info
 python setup.py sdist bdist_wheel
 
 # upload pypi.org [--verbose]
