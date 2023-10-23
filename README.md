@@ -40,6 +40,7 @@ DBT features:
 
 ```bash
 python setup.py install --force 
+or pip install dbt-odps-winwin
 ```
 
 ### How to Configure?
