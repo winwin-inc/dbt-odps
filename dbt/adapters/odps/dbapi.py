@@ -1,6 +1,8 @@
 from odps.dbapi import Connection, Cursor
-from dbt.adapters.odps.utils import print_method_call,logger
+from odps.errors import ODPSError
 
+from dbt.adapters.odps.utils import print_method_call,logger,remove_comments
+ 
 
 class ODPSCursor(Cursor):
     @print_method_call
@@ -14,7 +16,7 @@ class ODPSCursor(Cursor):
 
         # format parameters
         if parameters is None:
-            sql = operation
+            sql = remove_comments(operation)
         else:
             raise NotImplementedError("Parameters are not supported yet")
 
@@ -25,8 +27,14 @@ class ODPSCursor(Cursor):
             run_sql = self._run_sqa_with_fallback
         if async_:
             run_sql = odps.run_sql
-
-        self._instance = run_sql(sql, hints=self._hints)
+        logger.error(f" ODPSCursor.execute {sql}")
+        try:
+            self._instance = run_sql(sql, hints=self._hints)
+        except ODPSError as e:
+            logger.error(f"An ODPS error occurred: {e}")
+        except Exception as e:
+            logger.error(f"An unexpected error occurred: {e}")
+        
 
 
 class ODPSConnection(Connection):

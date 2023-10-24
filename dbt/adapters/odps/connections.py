@@ -95,8 +95,8 @@ class ODPSConnectionManager(SQLConnectionManager):
                 project=credentials.database,
                 hints=credentials.hints,
             )
-            if credentials.schema != "default":
-                kwargs["schema"] = credentials.schema
+            #if credentials.schema != "default":
+            #    kwargs["schema"] = credentials.schema
 
             # logger.debug(f"open ODPSConnection kwargs: {kwargs }")    
             handle = ODPSConnection(**kwargs)
