@@ -71,3 +71,7 @@ Configuration options:
 ## NOTES
 
 1. When using merge statement, ODPS required that table is a transactional table. So, we have to create the snapshot table before select. Under the hook, we using the first referred table as source data structure to create table, so this data source must be a table, view is not supported.
+
+
+## DEVELOPER REF
+DBT docs [what-are-adapters](https://docs.getdbt.com/reference/dbt-classes)
