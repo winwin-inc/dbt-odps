@@ -74,4 +74,4 @@ Configuration options:
 
 
 ## DEVELOPER REF
-DBT docs [what-are-adapters](https://docs.getdbt.com/reference/dbt-classes)
+DBT docs [what-are-adapters](https://docs.getdbt.com/guides/dbt-ecosystem/adapter-development/1-what-are-adapters)
