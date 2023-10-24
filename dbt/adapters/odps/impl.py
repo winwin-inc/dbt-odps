@@ -187,16 +187,14 @@ class ODPSAdapter(SQLAdapter):
         return self.get_odps_table_if_exists(
             relation.identifier,
             project=relation.database,
-            schema=relation.schema,
         )
     @print_method_call
-    def get_odps_table_if_exists(self, name, project=None, schema=None) -> Optional[Table]:
+    def get_odps_table_if_exists(self, name, project=None) -> Optional[Table]:
         kwargs = {
             "name": name,
             "project": project,
         }
-        if schema != "default":
-            kwargs["schema"] = schema
+        
 
         if self.odps.exist_table(**kwargs):
             return self.odps.get_table(**kwargs)

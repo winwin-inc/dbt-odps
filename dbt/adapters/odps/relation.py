@@ -20,12 +20,11 @@ class OdpsRelation(BaseRelation):
     def create(cls, database=None, schema=None, identifier=None, type=None, **kwargs):
         # logger.error(f"OdpsRelation.create  database {database} . schema {schema} . identifier {identifier} . type {type} . kwargs {kwargs}")
         
-        if schema != "default":
-            kwargs.update(
-                {
-                    "include_policy": OdpsIncludePolicy(schema=True),
-                }
-            )
+        kwargs.update(
+            {
+                "include_policy": OdpsIncludePolicy(schema=(schema != 'default') )
+            }
+        )
         return super().create(database, schema, identifier, type, **kwargs)
 
     @classmethod

@@ -14,6 +14,6 @@
 # limitations under the License.
 #}
 
-{% materialization view, adapter='hive' -%}
+{% materialization view, adapter='odps' -%}
     {{ return(create_or_replace_view()) }}
 {%- endmaterialization %}

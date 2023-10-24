@@ -14,7 +14,7 @@
 # limitations under the License.
 #}
 
-{% materialization incremental, adapter='hive' -%}
+{% materialization incremental, adapter='odps' -%}
 
   -- relations
   {%- set existing_relation = load_cached_relation(this) -%}

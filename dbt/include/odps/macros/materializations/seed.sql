@@ -88,7 +88,7 @@
 {% endmacro %}
 
 
-{% materialization seed, adapter='hive' %}
+{% materialization seed, adapter='odps' %}
 
   {%- set identifier = model['alias'] -%}
   {%- set old_relation = adapter.get_relation(database=database, schema=schema, identifier=identifier) -%}

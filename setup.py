@@ -8,7 +8,7 @@ this_directory = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(this_directory, "README.md"), encoding="utf8") as f:
     long_description = f.read()
  
-package_version = "1.6.6"
+package_version = "1.0.1"
 
 def _get_plugin_version_dict():
     _version_path = os.path.join(this_directory, "dbt", "adapters", "odps", "__version__.py")

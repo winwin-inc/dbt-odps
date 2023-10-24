@@ -1,6 +1,10 @@
 import logging
 import sys
 import traceback
+from dbt.events import AdapterLogger
+logger = AdapterLogger("odps")
+
+""" 
 logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
@@ -11,7 +15,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)  # 创建适配器专用的日志记录器
-
+"""
 def print_method_call(method):
     def wrapper(*args, **kwargs):
         
@@ -20,9 +24,8 @@ def print_method_call(method):
         else:
             obj_name = f"{args[0].__class__.__name__}." if hasattr(args[0], '__class__') else ''
         
-        #logger.error(f"Calling {obj_name}{method.__name__} with args: {args[1:]}, kwargs: {kwargs}")
+        logger.error(f"Calling {obj_name}{method.__name__} with args: {args[1:]}, kwargs: {kwargs}")
         result = method(*args, **kwargs)
-        #logger.error(f"{obj_name}{method.__name__} returned: {result}")
-        # logger.error(traceback.format_exc())
+        logger.error(f"{obj_name}{method.__name__} returned: {result}")
         return result
     return wrapper
