@@ -18,16 +18,17 @@
 
   {%- set identifier = model['alias'] -%}
 
-  {%- set old_relation = adapter.get_relation(database=database, schema=schema, identifier=identifier) -%}
-  
- 
+  {%- set target_relation = api.Relation.create(identifier=identifier,
+                                            database=database,
+                                            type='table') -%}
+  -- setup: if the target relation already exists, drop it
+  -- in case if the existing and future table is delta, we want to do a
+  -- create or replace table instead of dropping, so we don't have the table unavailable
+  {% if target_relation -%}
+    {{ adapter.drop_relation(target_relation) }}
+  {%- endif %}
 
-   {%- set target_relation = api.Relation.create(identifier=identifier,
-                                                database=database,
-                                                type='table') -%}
-
-
- 
+  -- build model
   {% call statement('main') -%}
     {{ create_table_as(False, target_relation, sql) }}
   {%- endcall %}
