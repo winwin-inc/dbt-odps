@@ -15,9 +15,7 @@
 #}
 
 {% materialization table, adapter = 'odps' %}
-
   {%- set identifier = model['alias'] -%}
-
   {%- set target_relation = api.Relation.create(identifier=identifier,
                                             database=database,
                                             type='table') -%}
@@ -32,14 +30,10 @@
   {% call statement('main') -%}
     {{ create_table_as(False, target_relation, sql) }}
   {%- endcall %}
-
   {% set should_revoke = should_revoke(existing_relation, full_refresh_mode=True) %}
   {% do apply_grants(target_relation, grant_config, should_revoke=should_revoke) %}
-
   {% do persist_docs(target_relation, model) %}
-
   {{ run_hooks(post_hooks) }}
-
   {{ return({'relations': [target_relation]})}}
 
 {% endmaterialization %}

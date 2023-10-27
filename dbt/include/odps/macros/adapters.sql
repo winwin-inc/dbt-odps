@@ -170,3 +170,37 @@
   {% set result = load_result('show_create_table') %}
   {% do return(result.table[0][0]) %}
 {% endmacro %}
+
+
+{% macro odps__list_tables_without_caching(database) %}
+  {% call statement('list_tables_without_caching', fetch_result=True) -%}
+    show tables  
+  {% endcall %}
+  {% do return(load_result('list_tables_without_caching').table) %}
+{% endmacro %}
+
+{% macro odps__list_views_without_caching(database) %}
+  {% call statement('list_views_without_caching', fetch_result=True) -%}
+    show views  
+    -- show tables  in {{ relation }}
+    -- hive2 has no `show view` command
+  {% endcall %}
+  {% do return(load_result('list_views_without_caching').table) %}
+{% endmacro %}
+
+
+
+{% macro partition_cols(label, required=false) %}
+  {%- set cols = config.get('partition_by', validator=validation.any[list, basestring]) -%}
+  {%- if cols is not none %}
+    {%- if cols is string -%}
+      {%- set cols = [cols] -%}
+    {%- endif -%}
+    {{ label }} (
+    {%- for item in cols -%}
+      {{ item }}
+      {%- if not loop.last -%},{%- endif -%}
+    {%- endfor -%}
+    )
+  {%- endif %}
+{%- endmacro -%}

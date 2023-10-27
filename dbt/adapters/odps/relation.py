@@ -40,3 +40,4 @@ class OdpsRelation(BaseRelation):
             identifier=identifier,
             type=RelationType.View if table.is_virtual_view else RelationType.Table,
         )
+ 

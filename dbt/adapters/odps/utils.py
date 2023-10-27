@@ -5,7 +5,7 @@ import re
 import traceback
 from dbt.events import AdapterLogger
 logger = AdapterLogger("odps")
-DEBUG_ODPS = False
+DEBUG_ODPS = True 
 
 def print_method_call(method):
     def wrapper(*args, **kwargs):

@@ -122,8 +122,8 @@ class ODPSAdapter(SQLAdapter):
         """
         kwargs = {"schema": schema_relation}
         try:
-            result_tables = self.execute_macro("hive__list_tables_without_caching", kwargs=kwargs)
-            result_views = self.execute_macro("hive__list_views_without_caching", kwargs=kwargs)
+            result_tables = self.execute_macro("odps__list_tables_without_caching", kwargs=kwargs)
+            result_views = self.execute_macro("odps__list_views_without_caching", kwargs=kwargs)
         except dbt.exceptions.DbtRuntimeError as e:
             errmsg = getattr(e, "msg", "")
             if f"Database '{schema_relation}' not found" in errmsg:
@@ -194,7 +194,6 @@ class ODPSAdapter(SQLAdapter):
             "name": name,
             "project": project,
         }
-        
 
         if self.odps.exist_table(**kwargs):
             return self.odps.get_table(**kwargs)
@@ -253,6 +252,15 @@ class ODPSAdapter(SQLAdapter):
             columns,
             column_types=text_types,
         )
+    @print_method_call
+    def get_relation(self, database: str, schema: str, identifier: str) -> Optional[BaseRelation]:
+        """Get a Relation for own list"""
+        if not self.Relation.get_default_quote_policy().database:
+            database = None
+        
+        
+        return super().get_relation(database, schema, identifier)
+
 
     """ 
     @print_method_call
