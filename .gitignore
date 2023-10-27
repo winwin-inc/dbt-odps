@@ -67,6 +67,7 @@ instance/
 
 # Scrapy stuff:
 .scrapy
+.DS_Store
 
 # Sphinx documentation
 docs/_build/
@@ -134,5 +135,6 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 
+.idea/
 # Cython debug symbols
 cython_debug/
