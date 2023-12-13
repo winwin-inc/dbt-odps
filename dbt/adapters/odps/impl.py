@@ -1,22 +1,22 @@
-import agate
 from dataclasses import dataclass
-import dbt
+from typing import List, Optional, Dict, Iterable, Any
+
+import agate
 import dbt.exceptions
-from dbt.adapters.sql import SQLAdapter
 from dbt.adapters.base import AdapterConfig
-from dbt.adapters.base.relation import BaseRelation, InformationSchema
-from dbt.contracts.graph.manifest import Manifest
-from typing import List, Set, cast, Optional, Dict
-from typing_extensions import TypeAlias
+from dbt.adapters.base.relation import BaseRelation
+from dbt.adapters.sql import SQLAdapter
+from dbt.clients import agate_helper
+from dbt.contracts.relation import RelationType
 from odps import ODPS
-from odps.models import Table, TableSchema
-from odps.errors import NoSuchObject, ODPSError
-from .relation import OdpsRelation
+from odps.errors import ODPSError
+from odps.models import Table
+
+import dbt
+from dbt.adapters.odps.utils import print_method_call, logger
 from .colums import OdpsColumn
 from .connections import ODPSConnectionManager, ODPSCredentials
-from dbt.adapters.odps.utils import print_method_call,logger
-from dbt.clients import agate_helper
-
+from .relation import OdpsRelation
 
 LIST_RELATIONS_MACRO_NAME = "list_relations_without_caching"
 SHOW_CREATE_TABLE_MACRO_NAME = "show_create_table"
@@ -31,17 +31,17 @@ class OdpsConfig(AdapterConfig):
 
 class ODPSAdapter(SQLAdapter):
     """
-    Controls actual implmentation of adapter, and ability to override certain methods.
+    Controls actual implementation of adapter, and ability to override certain methods.
     """
 
     ConnectionManager = ODPSConnectionManager
-    Relation: TypeAlias = OdpsRelation
-    Column: TypeAlias = OdpsColumn
-    AdapterSpecificConfigs: TypeAlias = OdpsConfig
+    Relation = OdpsRelation
+    Column = OdpsColumn
+    AdapterSpecificConfigs = OdpsConfig
 
     @property
     def odps(self) -> ODPS:
-        return self.connections.get_thread_connection().handle._odps
+        return self.connections.get_thread_connection().handle.odps
 
     @property
     def credentials(self) -> ODPSCredentials:
@@ -49,7 +49,7 @@ class ODPSAdapter(SQLAdapter):
 
     @classmethod
     def date_function(cls) -> str:
-        return "current_timestamp()"
+        return "CURRENT_TIMESTAMP()"
 
     @classmethod
     def convert_number_type(cls, agate_table: agate.Table, col_idx: int) -> str:
@@ -73,7 +73,7 @@ class ODPSAdapter(SQLAdapter):
         """the interval could be one of [dd, mm, yyyy, mi, ss, year, month, mon, day, hour, hh]'"""
         # return f"{add_to} + interval '{number} {interval}'"
         return f"dateadd({add_to}, {number}, '{interval}')"
-    
+
     @print_method_call
     def create_schema(self, relation: BaseRelation) -> None:
         """ODPS does not support schemas, so this is a no-op"""
@@ -97,11 +97,12 @@ class ODPSAdapter(SQLAdapter):
 
     def quote(self, identifier):
         return "`{}`".format(identifier)
-    
+
     @print_method_call
     def check_schema_exists(self, database: str, schema: str) -> bool:
         """always return true, as ODPS does not have schemas."""
         return True
+
     @print_method_call
     def list_schemas(self, database: str) -> List[str]:
         try:
@@ -111,19 +112,19 @@ class ODPSAdapter(SQLAdapter):
                 return ["default"]
             else:
                 raise e
+
     @print_method_call
     def list_relations_without_caching(
-        self,
-        schema_relation: OdpsRelation = None,
+            self,
+            schema_relation: OdpsRelation = None,
     ) -> List[OdpsRelation]:
-       
+
         """Get a list of Relation(table or view) by SQL directly
         Use different SQL statement for view/table
         """
         kwargs = {"schema": schema_relation}
         try:
-            result_tables = self.execute_macro("odps__list_tables_without_caching", kwargs=kwargs)
-            result_views = self.execute_macro("odps__list_views_without_caching", kwargs=kwargs)
+            result_tables = self.odps.list_tables()
         except dbt.exceptions.DbtRuntimeError as e:
             errmsg = getattr(e, "msg", "")
             if f"Database '{schema_relation}' not found" in errmsg:
@@ -133,61 +134,25 @@ class ODPSAdapter(SQLAdapter):
                 logger.debug(f"{description} {schema_relation}: {e.msg}")
                 return []
 
-        # hive2
-        # Collect table/view separately
-        # Unfortunatly, Hive2 does not distincguish table/view
-        # Currently views are also listed in `show tables`
-        # https://issues.apache.org/jira/browse/HIVE-14558
-        # all_rows = result_tables
-        # relations = []
-        # for row in all_rows:
-        #    relation_type = self.get_relation_type(f"{schema_relation}.{row['tab_name']}")
-        #    relations.append(
-        #         self.Relation.create(
-        #            schema=schema_relation.schema,
-        #            identifier=row['tab_name'],
-        #            type=relation_type
-        #        )
-        #    )
-
-        # in Hive 2, result_tables has table + view, result_views only has views
-        # so we build a result_tables_without_view that doesnot have views
-
-        result_tables_without_view = []
-        for row in result_tables:
-            # check if this table is view
-            is_view = (
-                len(list(filter(lambda x: x["tab_name"] == row["tab_name"], result_views))) == 1
-            )
-            if not is_view:
-                result_tables_without_view.append(row)
-
         relations = []
-        for row in result_tables_without_view:
+        for row in result_tables:
             relations.append(
                 self.Relation.create(
+                    database=schema_relation.database,
                     schema=schema_relation.schema,
-                    identifier=row["tab_name"],
-                    type="table",
+                    identifier=row.name,
+                    type=RelationType.Table,
                 )
             )
-        for row in result_views:
-            relations.append(
-                self.Relation.create(
-                    schema=schema_relation.schema,
-                    identifier=row["tab_name"],
-                    type="view",
-                )
-            )
-
         return relations
-    
+
     @print_method_call
     def get_odps_table_by_relation(self, relation: OdpsRelation):
         return self.get_odps_table_if_exists(
             relation.identifier,
             project=relation.database,
         )
+
     @print_method_call
     def get_odps_table_if_exists(self, name, project=None) -> Optional[Table]:
         kwargs = {
@@ -199,7 +164,7 @@ class ODPSAdapter(SQLAdapter):
             return self.odps.get_table(**kwargs)
 
         return None
-    
+
     # override
     @print_method_call
     def get_columns_in_relation(self, relation: OdpsRelation):
@@ -211,12 +176,25 @@ class ODPSAdapter(SQLAdapter):
             if odps_table
             else []
         )
-    
+
+    def _get_columns_for_catalog(self, relation: OdpsRelation) -> Iterable[Dict[str, Any]]:
+        """Get columns for catalog. Used by get_one_catalog"""
+        # columns = self.parse_columns_from_information(relation)
+        columns = self.get_columns_in_relation(relation)
+
+        for column in columns:
+            # convert OdpsColumn into catalog dicts
+            as_dict = column.to_column_dict()
+            as_dict["column_name"] = as_dict.pop("column", None)
+            as_dict["column_type"] = as_dict.pop("dtype")
+            as_dict["table_database"] = None
+            yield as_dict
+
     def _get_one_catalog(
-        self,
-        information_schema,
-        schemas,
-        manifest,
+            self,
+            information_schema,
+            schemas,
+            manifest,
     ) -> agate.Table:
         """Get ONE catalog. Used by get_catalog
 
@@ -238,7 +216,7 @@ class ODPSAdapter(SQLAdapter):
             quote_policy=self.config.quoting,
         ).without_identifier()
 
-        columns: List[Dict[str, Any]] = []
+        columns: List[Dict[str, any]] = []
         for relation in self.list_relations(database, schema):
             logger.debug(f"Getting table schema for relation {relation}")
             columns.extend(self._get_columns_for_catalog(relation))
@@ -252,15 +230,14 @@ class ODPSAdapter(SQLAdapter):
             columns,
             column_types=text_types,
         )
+
     @print_method_call
     def get_relation(self, database: str, schema: str, identifier: str) -> Optional[BaseRelation]:
         """Get a Relation for own list"""
         if not self.Relation.get_default_quote_policy().database:
             database = None
-        
-        
-        return super().get_relation(database, schema, identifier)
 
+        return super().get_relation(database, schema, identifier)
 
     """ 
     @print_method_call
@@ -305,5 +282,5 @@ class ODPSAdapter(SQLAdapter):
         )
         return table
     """
-    
+
 # may require more build out to make more user friendly to confer with team and community.

@@ -1,30 +1,31 @@
-import logging
-import sys
+import ast
 import re
 
-import traceback
 from dbt.events import AdapterLogger
+import os
+
 logger = AdapterLogger("odps")
-DEBUG_ODPS = True 
+DEBUG_ODPS = os.getenv("ODPS_DEBUG", "false").lower() == "true"
+
 
 def print_method_call(method):
     def wrapper(*args, **kwargs):
-        
+
         if args and isinstance(args[0], type):  # 检查是否是类方法调用
             obj_name = f"{args[0].__name__}."
         else:
             obj_name = f"{args[0].__class__.__name__}." if hasattr(args[0], '__class__') else ''
-        
+
         if DEBUG_ODPS:
             logger.error(f"Calling {obj_name}{method.__name__} with args: {args[1:]}, kwargs: {kwargs}")
 
         result = method(*args, **kwargs)
-       
-        if DEBUG_ODPS: 
+
+        if DEBUG_ODPS:
             logger.error(f"{obj_name}{method.__name__} returned: {result}")
         return result
-    return wrapper
 
+    return wrapper
 
 
 def remove_comments(input_string):
@@ -32,6 +33,19 @@ def remove_comments(input_string):
     result = re.sub(r'/\*.*?\*/', '', input_string, flags=re.DOTALL)
     return result
 
+
+def parse_hints(input_string):
+    pattern = re.compile(r'^set\s*(\S+)\s*=\s*(\S+)\s*;')
+    lines = []
+    hints = {}
+    for line in input_string.splitlines():
+        trimmed = line.strip()
+        find = re.match(pattern, trimmed)
+        if find:
+            hints[find.group(1)] = ast.literal_eval(find.group(2))
+        else:
+            lines.append(line)
+    return hints, "\n".join(lines)
 
 # 示例用法
 # input_string = "This is a /* comment */ example"

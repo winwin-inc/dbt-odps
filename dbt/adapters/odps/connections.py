@@ -1,14 +1,18 @@
-import dbt.exceptions
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Optional, Dict, Union
+
+import dbt.exceptions
 from dbt.adapters.base import Credentials
 from dbt.adapters.sql import SQLConnectionManager
 # from dbt.logger import GLOBAL_LOGGER as logger
 from dbt.contracts.connection import AdapterResponse, ConnectionState, AdapterRequiredConfig
-from typing import Optional, Dict
+
+from dbt.adapters.odps.utils import print_method_call, logger
 from .dbapi import ODPSConnection
-from dbt.adapters.odps.utils import print_method_call,logger
-import traceback
+
+
+
 @dataclass
 class ODPSCredentials(Credentials):
     """
@@ -85,7 +89,7 @@ class ODPSConnectionManager(SQLConnectionManager):
 
         credentials: ODPSCredentials = connection.credentials
 
-        logger.debug(f"open credentials: {credentials }")
+        logger.debug(f"open credentials: {credentials}")
 
         try:
             kwargs = dict(
@@ -95,13 +99,13 @@ class ODPSConnectionManager(SQLConnectionManager):
                 project=credentials.database,
                 hints=credentials.hints,
             )
-            #if credentials.schema != "default":
+            # if credentials.schema != "default":
             #    kwargs["schema"] = credentials.schema
 
             # logger.debug(f"open ODPSConnection kwargs: {kwargs }")    
             handle = ODPSConnection(**kwargs)
             #  traceback.print_exc()
-            #raise dbt.exceptions.FailedToConnectError(f"Project {credentials.database} does not exist.")
+            # raise dbt.exceptions.FailedToConnectError(f"Project {credentials.database} does not exist.")
             if not handle.odps.exist_project(credentials.database):
                 logger.debug("Project {} does not exist".format(credentials.database))
                 raise dbt.exceptions.FailedToConnectError(f"Project {credentials.database} does not exist.")
@@ -127,6 +131,11 @@ class ODPSConnectionManager(SQLConnectionManager):
         # https://github.com/dbt-labs/dbt-spark/issues/142
         message = "OK"
         return AdapterResponse(_message=message)
+
+    @classmethod
+    @print_method_call
+    def data_type_code_to_name(cls, type_code: Union[int, str]) -> str:
+        return type_code
 
     # No transactions on ODPS....
     def add_begin_query(self, *args, **kwargs):

@@ -13,6 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #}
-{% macro hive__concat(fields) -%}
+{% macro odps__concat(fields) -%}
     concat({{ fields|join(', ') }})
 {%- endmacro %}

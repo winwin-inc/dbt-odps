@@ -13,6 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #}
-{% macro hive__escape_single_quotes(expression) -%}
+{% macro odps__escape_single_quotes(expression) -%}
 {{ expression | replace("'","\\'") }}
 {%- endmacro %}

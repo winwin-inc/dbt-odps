@@ -14,7 +14,7 @@
 # limitations under the License.
 #}
 
-{% macro dbt_hive_validate_get_file_format(raw_file_format) %}
+{% macro dbt_odps_validate_get_file_format(raw_file_format) %}
   {#-- Validate the file format #}
 
   {% set accepted_formats = ['text', 'csv', 'json', 'jdbc', 'parquet', 'orc', 'odps', 'delta', 'libsvm'] %}
@@ -32,7 +32,7 @@
 {% endmacro %}
 
 
-{% macro dbt_hive_validate_get_incremental_strategy(raw_strategy, file_format) %}
+{% macro dbt_odps_validate_get_incremental_strategy(raw_strategy, file_format) %}
   {#-- Validate the incremental strategy #}
 
   {% set invalid_strategy_msg -%}

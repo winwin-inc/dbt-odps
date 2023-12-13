@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #}
-{% macro hive__right(string_text, length_expression) %}
+{% macro odps__right(string_text, length_expression) %}
 
     case when {{ length_expression }} = 0
         then NULL

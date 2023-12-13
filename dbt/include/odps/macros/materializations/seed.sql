@@ -14,44 +14,8 @@
 # limitations under the License.
 #}
 
-{% macro hive__load_csv_rows(model, agate_table) %}
-    {% set batch_size = 1000 %}
-    {% set column_override = model['config'].get('column_types', {}) %}
 
-    {% set statements = [] %}
-
-    {% for chunk in agate_table.rows | batch(batch_size) %}
-        {% set bindings = [] %}
-
-        {% for row in chunk %}
-          {% do bindings.extend(row) %}
-        {% endfor %}
-
-        {% set sql %}
-            insert into {{ this.render() }} values
-            {% for row in chunk -%}
-                ({%- for col_name in agate_table.column_names -%}
-                    {%- set inferred_type = adapter.convert_type(agate_table, loop.index0) -%}
-                    {%- set type = column_override.get(col_name, inferred_type) -%}
-                      cast(%s as {{type}})
-                    {%- if not loop.last%},{%- endif %}
-                {%- endfor -%})
-                {%- if not loop.last%},{%- endif %}
-            {%- endfor %}
-        {% endset %}
-
-        {% do adapter.add_query(sql, bindings=bindings, abridge_sql_log=True) %}
-
-        {% if loop.index0 == 0 %}
-            {% do statements.append(sql) %}
-        {% endif %}
-    {% endfor %}
-
-    {# Return SQL so we can render it out into the compiled files #}
-    {{ return(statements[0]) }}
-{% endmacro %}
-
-{% macro hive__reset_csv_table(model, full_refresh, old_relation, agate_table) %}
+{% macro odps__reset_csv_table(model, full_refresh, old_relation, agate_table) %}
     {% if old_relation %}
         {{ adapter.drop_relation(old_relation) }}
     {% endif %}
@@ -59,8 +23,48 @@
     {{ return(sql) }}
 {% endmacro %}
 
+{% macro odps__load_csv_rows(model, agate_table) %}
+  {% set batch_size = get_batch_size() %}
+  {% set cols_sql = get_seed_column_quoted_csv(model, agate_table.column_names) %}
+  {% set bindings = [] %}
+  {% set statements = [] %}
 
-{% macro hive__create_csv_table(model, agate_table) %}
+  {# get odps types #}
+  {% set column_override = model['config'].get('column_types', {}) %}
+  {% set data_types = {} %}
+  {% for col_name in agate_table.column_names %}
+    {% set inferred_type = adapter.convert_type(agate_table, loop.index0) %}
+    {% set data_type = column_override.get(col_name, inferred_type) %}
+    {% do data_types.update({col_name: data_type}) %}
+  {% endfor %}
+
+  {% for chunk in agate_table.rows | batch(batch_size) %}
+      {% set sql %}
+          insert into {{ this.render() }} ({{ cols_sql }}) values
+          {% for row in chunk -%}
+              ({%- for column in agate_table.column_names -%}
+                  {%- if data_types[column] == 'string' -%}
+                    '{{ row[column] }}'
+                  {%- else -%}
+                    cast('{{ row[column] }}' as {{ data_types[column] }})
+                  {%- endif -%}
+                  {%- if not loop.last%},{%- endif %}
+              {%- endfor -%})
+              {%- if not loop.last%},{%- endif %}
+          {%- endfor %}
+      {% endset %}
+
+      {% do adapter.add_query(sql, abridge_sql_log=True) %}
+
+      {% if loop.index0 == 0 %}
+          {% do statements.append(sql) %}
+      {% endif %}
+  {% endfor %}
+
+  {{ return(statements[0]) }}
+{% endmacro %}
+
+{% macro odps__create_csv_table(model, agate_table) %}
   {%- set column_override = model['config'].get('column_types', {}) -%}
   {%- set quote_seed_column = model['config'].get('quote_columns', None) -%}
 
@@ -92,8 +96,7 @@
 
   {%- set identifier = model['alias'] -%}
   {%- set old_relation = adapter.get_relation(database=database, schema=schema, identifier=identifier) -%}
-  {%- set target_relation = api.Relation.create(database=database, schema=schema, identifier=identifier,
-                                               type='table') -%}
+  {%- set target_relation = api.Relation.create(database=database, schema=schema, identifier=identifier, type='table') -%}
   {%- set agate_table = load_agate_table() -%}
   {%- do store_result('agate_table', response='OK', agate_table=agate_table) -%}
 

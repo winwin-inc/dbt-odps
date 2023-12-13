@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #}
-{% macro hive__split_part(string_text, delimiter_text, part_number) %}
+{% macro odps__split_part(string_text, delimiter_text, part_number) %}
 
     {% set delimiter_expr %}
 

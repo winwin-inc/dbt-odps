@@ -14,6 +14,6 @@
 # limitations under the License.
 #}
 
-{% macro hive__date_trunc(datepart, date) -%}
+{% macro odps__date_trunc(datepart, date) -%}
     trunc({{date}}, '{{datepart}}')
 {%- endmacro %}

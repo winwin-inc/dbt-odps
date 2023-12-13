@@ -15,24 +15,24 @@
 #}
 
 {#-- Assume grants copy over --#}
-{% macro hive__copy_grants() %}
+{% macro odps__copy_grants() %}
     {{ return(True) }}
 {% endmacro %}
 
-{%- macro hive__get_grant_sql(relation, privilege, grantees) -%}
+{%- macro odps__get_grant_sql(relation, privilege, grantees) -%}
     grant {{ privilege }} on table {{ relation }} to user {{ adapter.quote(grantees[0]) }}
 {%- endmacro %}
 
-{%- macro hive__get_revoke_sql(relation, privilege, grantees) -%}
+{%- macro odps__get_revoke_sql(relation, privilege, grantees) -%}
     revoke {{ privilege }} on table {{ relation }} from user {{ adapter.quote(grantees[0]) }}
 {%- endmacro %}
 
-{#-- hive does not support multiple grantees per dcl statement --#}
-{%- macro hive__support_multiple_grantees_per_dcl_statement() -%}
+{#-- odps does not support multiple grantees per dcl statement --#}
+{%- macro odps__support_multiple_grantees_per_dcl_statement() -%}
     {{ return(False) }}
 {%- endmacro -%}
 
-{% macro hive__call_dcl_statements(dcl_statement_list) %}
+{% macro odps__call_dcl_statements(dcl_statement_list) %}
     {% for dcl_statement in dcl_statement_list %}
         {% call statement('grant_or_revoke') %}
             {{ dcl_statement }}
@@ -40,6 +40,6 @@
     {% endfor %}
 {% endmacro %}
 
-{% macro hive__get_show_grant_sql(relation) %}
+{% macro odps__get_show_grant_sql(relation) %}
     show grant on {{ relation }}
 {% endmacro %}

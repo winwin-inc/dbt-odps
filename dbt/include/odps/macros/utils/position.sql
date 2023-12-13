@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #}
-{% macro hive__position(substring_text, string_text) %}
+{% macro odps__position(substring_text, string_text) %}
 
     locate(
         {{ substring_text }}, {{ string_text }}

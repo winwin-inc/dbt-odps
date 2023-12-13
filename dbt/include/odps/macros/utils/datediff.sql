@@ -14,7 +14,7 @@
 # limitations under the License.
 #}
 
-{% macro hive__datediff(first_date, second_date, datepart) %}
+{% macro odps__datediff(first_date, second_date, datepart) %}
 
     {%- if datepart == 'day' -%}
 

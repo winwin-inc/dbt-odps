@@ -13,6 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #}
-{% macro hive__current_timestamp() -%}
+{% macro odps__current_timestamp() -%}
     current_timestamp()
 {%- endmacro %}

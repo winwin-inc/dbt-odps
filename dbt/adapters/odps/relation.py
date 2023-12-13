@@ -2,7 +2,9 @@ from dataclasses import dataclass, field
 from dbt.adapters.base.relation import BaseRelation
 from dbt.contracts.relation import Policy, RelationType
 from odps.models.table import Table
-from dbt.adapters.odps.utils import print_method_call,logger
+from dbt.adapters.odps.utils import print_method_call, logger
+
+
 @dataclass
 class OdpsIncludePolicy(Policy):
     database: bool = True
@@ -18,11 +20,11 @@ class OdpsRelation(BaseRelation):
     @classmethod
     @print_method_call
     def create(cls, database=None, schema=None, identifier=None, type=None, **kwargs):
-        # logger.error(f"OdpsRelation.create  database {database} . schema {schema} . identifier {identifier} . type {type} . kwargs {kwargs}")
-        
+        #logger.error(f"OdpsRelation.create  database {database} . schema {schema} . identifier {identifier} . type {type} . kwargs {kwargs}")
+
         kwargs.update(
             {
-                "include_policy": OdpsIncludePolicy(schema=(schema != 'default') )
+                "include_policy": OdpsIncludePolicy(schema=(schema != 'default'))
             }
         )
         return super().create(database, schema, identifier, type, **kwargs)
@@ -40,4 +42,3 @@ class OdpsRelation(BaseRelation):
             identifier=identifier,
             type=RelationType.View if table.is_virtual_view else RelationType.Table,
         )
- 

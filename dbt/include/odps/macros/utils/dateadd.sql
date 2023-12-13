@@ -14,7 +14,7 @@
 # limitations under the License.
 #}
 
-{% macro hive__dateadd(datepart, interval, from_date_or_timestamp) %}
+{% macro odps__dateadd(datepart, interval, from_date_or_timestamp) %}
     {%- if datepart == 'day' -%}
         from_unixtime(unix_timestamp(date_add({{from_date_or_timestamp}}, cast({{interval}} as int)))+(cast(hour({{from_date_or_timestamp}}) as int)*3600) + (cast(minute({{from_date_or_timestamp}}) as int)*60) + (cast(second({{from_date_or_timestamp}}) as int)))
     {% elif datepart == 'month' -%}

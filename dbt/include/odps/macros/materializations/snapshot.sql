@@ -14,7 +14,7 @@
 # limitations under the License.
 #}
 
-{% macro hive__snapshot_hash_arguments(args) -%}
+{% macro odps__snapshot_hash_arguments(args) -%}
     md5({%- for arg in args -%}
         coalesce(cast({{ arg }} as string ), '')
         {% if not loop.last %} || '|' || {% endif %}
@@ -22,13 +22,13 @@
 {%- endmacro %}
 
 
-{% macro hive__snapshot_string_as_time(timestamp) -%}
+{% macro odps__snapshot_string_as_time(timestamp) -%}
     {%- set result = "to_timestamp('" ~ timestamp ~ "')" -%}
     {{ return(result) }}
 {%- endmacro %}
 
 
-{% macro hive__snapshot_merge_sql(target, source, insert_cols) -%}
+{% macro odps__snapshot_merge_sql(target, source, insert_cols) -%}
 
     merge into {{ target }} as DBT_INTERNAL_DEST
     using {{ source }} as DBT_INTERNAL_SOURCE
@@ -46,7 +46,7 @@
 {% endmacro %}
 
 
-{% macro hive_build_snapshot_staging_table(strategy, sql, target_relation) %}
+{% macro odps_build_snapshot_staging_table(strategy, sql, target_relation) %}
     {% set tmp_identifier = target_relation.identifier ~ '__dbt_tmp' %}
 
     {%- set tmp_relation = api.Relation.create(identifier=tmp_identifier,
@@ -65,12 +65,12 @@
 {% endmacro %}
 
 
-{% macro hive__post_snapshot(staging_relation) %}
+{% macro odps__post_snapshot(staging_relation) %}
     {% do adapter.drop_relation(staging_relation) %}
 {% endmacro %}
 
 
-{% macro hive__create_columns(relation, columns) %}
+{% macro odps__create_columns(relation, columns) %}
     {% if columns|length > 0 %}
     {% call statement() %}
       alter table {{ relation }} add columns (
@@ -83,7 +83,7 @@
 {% endmacro %}
 
 
-{% materialization snapshot, adapter='hive' %}
+{% materialization snapshot, adapter='odps' %}
   {%- set config = model['config'] -%}
 
   {%- set target_table = model.get('alias', model.get('name')) -%}
@@ -139,7 +139,7 @@
 
       {{ adapter.valid_snapshot_target(target_relation) }}
 
-      {% set staging_table = hive_build_snapshot_staging_table(strategy, sql, target_relation) %}
+      {% set staging_table = odps_build_snapshot_staging_table(strategy, sql, target_relation) %}
 
       -- this may no-op if the database does not require column expansion
       {% do adapter.expand_target_column_types(from_relation=staging_table,

@@ -14,6 +14,6 @@
 # limitations under the License.
 #}
 
-{% macro hive__bool_or(expression) -%}
+{% macro odps__bool_or(expression) -%}
     max({{ expression }})
 {%- endmacro %}

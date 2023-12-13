@@ -14,7 +14,7 @@
 # limitations under the License.
 #}
 
-{% macro hive__hash(expression) -%}
+{% macro odps__hash(expression) -%}
     case when {{ expression }} = NULL
         then md5('')
     else
