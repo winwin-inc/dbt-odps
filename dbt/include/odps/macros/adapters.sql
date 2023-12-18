@@ -154,6 +154,25 @@
     (
         {{ sql }}
     );
+    {% elif config.get('partition_by') %}
+    set odps.sql.submit.mode='script';
+    create {% if is_external == true -%}external{%- endif %} table {{ relation }}
+    {{ odps__get_table_columns_and_constraints_from_query(sql) }}
+    {{ options_clause() }}
+    {{ partition_clause() }}
+    {{ clustered_cols(label="clustered by") }}
+    {{ stored_by_clause(table_type) }}
+    {{ file_format_clause() }}
+    {{ location_clause() }}
+    {{ comment_clause() }}
+    {{ properties_clause() }}
+    {{ lifecycle_clause(temporary) }}
+    ;
+
+    insert into {{ relation }} {{ partition_cols(label="partition") }}
+    (
+        {{ sql }}
+    );
     {%- else -%}
       create table {{ relation }}
       {{ lifecycle_clause(temporary) }}
@@ -216,6 +235,33 @@
   {% endcall %}
   {% do return(load_result('list_views_without_caching').table) %}
 {% endmacro %}
+
+{% macro odps__get_table_columns_and_constraints_from_query(sql) -%}
+  {%- set partition_cols = config.get('partition_by', validator=validation.any[list, basestring]) -%}
+  {%- set partition_col_names = [] -%}
+  {%- if partition_cols is not none %}
+    {%- if partition_cols is mapping  -%}
+    {%- set partition_cols = [partition_cols] -%}
+    {%- endif -%}
+    {%- for item in partition_cols -%}
+    {%- do partition_col_names.append(item.field) -%}
+    {%- endfor -%}
+  {%- endif %}
+
+  {#-- Obtain the column schema provided by sql file. #}
+  {%- set sql_file_provided_columns = get_column_schema_from_query(sql, config.get('sql_header', none)) -%}
+  {%- set columns = [] -%}
+    {%- for c in sql_file_provided_columns -%}
+    {%- if c.name not in partition_col_names -%}
+    {%- do columns.append(c) -%}
+    {%- endif -%}
+    {%- endfor -%}
+(
+    {% for c in columns -%}
+    {{ c.name }} {{ c.dtype }}{{ "," if not loop.last or raw_model_constraints }}
+    {% endfor %}
+)
+{%- endmacro %}
 
 {% macro odps__get_assert_columns_equivalent(sql) -%}
   {{ return(odps_assert_columns_equivalent(sql)) }}
