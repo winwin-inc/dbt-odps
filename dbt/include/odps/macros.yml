@@ -1,0 +1,9 @@
+version: 2
+
+macros:
+  - name: parse_date
+    description: Convert literal python value to date object
+    arguments:
+      - name: the_date
+        type: string
+        description: a literal string value for date, should be YYYYMMDD or YYYY-MM-DD format
