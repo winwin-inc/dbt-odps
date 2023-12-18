@@ -1,12 +1,11 @@
 import os
-import unittest
-
 import odps
 from odps import ODPS
 from odps.models import Table
+import  pytest
 
 
-class TestOdps(unittest.TestCase):
+class TestOdps:
     def test_get_project(self):
         odps.options.verbose = True
         o = ODPS(

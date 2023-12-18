@@ -1,5 +1,5 @@
 import os
-import unittest
+import pytest
 
 from dbt.config import PartialProject
 
@@ -118,10 +118,10 @@ def get_adapter():
     return ODPSAdapter(config_from_dicts(project, profile))
 
 
-class TestOdpsAdapter(unittest.TestCase):
+class TestOdpsAdapter:
 
     def test_quote(self):
-        self.assertEqual("`test`", get_adapter().quote("test"))
+        assert  "`test`" ==  get_adapter().quote("test")
 
     def test_relation(self):
         adapter = get_adapter()

@@ -1,4 +1,5 @@
 from dbt.adapters.odps.utils import parse_hints
+import  pytest
 
 
 def test_parse_hints():

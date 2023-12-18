@@ -3,6 +3,7 @@ from dbt.contracts.results import RunStatus
 from dbt.tests.util import run_dbt
 
 
+@pytest.mark.model
 class TestModelTable:
     """
     Methods in this class will be of two types:
