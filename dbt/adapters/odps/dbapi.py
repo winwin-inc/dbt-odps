@@ -11,13 +11,6 @@ from dbt.adapters.odps.utils import print_method_call, logger, parse_hints, remo
 class ODPSCursor(Cursor):
     @print_method_call
     def execute(self, operation, parameters=None, **kwargs):
-        for k in ["async", "async_"]:
-            if k in kwargs:
-                async_ = kwargs[k]
-                break
-        else:
-            async_ = False
-
         # prepare statement
         sql = remove_comments(operation)
         if parameters:
@@ -31,15 +24,15 @@ class ODPSCursor(Cursor):
 
         self._reset_state()
         odps = self._connection.odps
-        run_sql = odps.execute_sql
+        run_sql = odps.run_sql
         if self._use_sqa:
             run_sql = self._run_sqa_with_fallback
-        if async_:
-            run_sql = odps.run_sql
         hints, sql = parse_hints(sql)
         logger.error(f"ODPSCursor.execute {sql}")
         try:
             self._instance = run_sql(sql, hints=hints | (self._hints or {}))
+            logger.error(f"instance log url: {self._instance.get_logview_address()}")
+            self._instance.wait_for_success()
         except ODPSError as e:
             logger.error(f"An ODPS error occurred: {e}")
         except Exception as e:
