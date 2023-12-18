@@ -123,19 +123,22 @@ class ODPSAdapter(SQLAdapter):
         Use different SQL statement for view/table
         """
         kwargs = {"schema": schema_relation}
-        try:
-            result_tables = self.odps.list_tables()
-        except dbt.exceptions.DbtRuntimeError as e:
-            errmsg = getattr(e, "msg", "")
-            if f"Database '{schema_relation}' not found" in errmsg:
-                return []
-            else:
-                description = "Error while retrieving information about"
-                logger.debug(f"{description} {schema_relation}: {e.msg}")
-                return []
-
+        result_views: agate.Table = self.execute_macro("odps__list_views_without_caching", kwargs=kwargs)
+        views = set()
         relations = []
-        for row in result_tables:
+        for row in result_views.rows:
+            relations.append(
+                self.Relation.create(
+                    database=schema_relation.database,
+                    schema=schema_relation.schema,
+                    identifier=row['table_name'],
+                    type=RelationType.View,
+                )
+            )
+            views.add(row['table_name'])
+        for row in self.odps.list_tables():
+            if row.name in views:
+                continue
             relations.append(
                 self.Relation.create(
                     database=schema_relation.database,
@@ -175,60 +178,6 @@ class ODPSAdapter(SQLAdapter):
             [OdpsColumn.from_odps_column(column) for column in odps_table.table_schema.simple_columns]
             if odps_table
             else []
-        )
-
-    def _get_columns_for_catalog(self, relation: OdpsRelation) -> Iterable[Dict[str, Any]]:
-        """Get columns for catalog. Used by get_one_catalog"""
-        # columns = self.parse_columns_from_information(relation)
-        columns = self.get_columns_in_relation(relation)
-
-        for column in columns:
-            # convert OdpsColumn into catalog dicts
-            as_dict = column.to_column_dict()
-            as_dict["column_name"] = as_dict.pop("column", None)
-            as_dict["column_type"] = as_dict.pop("dtype")
-            as_dict["table_database"] = None
-            yield as_dict
-
-    def _get_one_catalog(
-            self,
-            information_schema,
-            schemas,
-            manifest,
-    ) -> agate.Table:
-        """Get ONE catalog. Used by get_catalog
-
-        manifest is used to run the method in other context's
-        threadself.get_columns_in_relation
-        """
-        if len(schemas) != 1:
-            dbt.exceptions.raise_compiler_error(
-                f"Expected only one schema in Hive _get_one_catalog, found " f"{schemas}"
-            )
-
-        database = information_schema.database
-        schema = list(schemas)[0]
-
-        schema_relation = self.Relation.create(
-            database=database,
-            schema=schema,
-            identifier="",
-            quote_policy=self.config.quoting,
-        ).without_identifier()
-
-        columns: List[Dict[str, any]] = []
-        for relation in self.list_relations(database, schema):
-            logger.debug(f"Getting table schema for relation {relation}")
-            columns.extend(self._get_columns_for_catalog(relation))
-
-        if len(columns) > 0:
-            text_types = agate_helper.build_type_tester(["table_owner", "table_database"])
-        else:
-            text_types = []
-
-        return agate.Table.from_object(
-            columns,
-            column_types=text_types,
         )
 
     @print_method_call

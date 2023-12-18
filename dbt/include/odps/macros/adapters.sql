@@ -212,7 +212,7 @@
 
 {% macro odps__list_views_without_caching(schema) %}
   {% call statement('list_views_without_caching', fetch_result=True) -%}
-    show views
+    select table_name from information_schema.TABLES where table_type = 'VIRTUAL_VIEW'
   {% endcall %}
   {% do return(load_result('list_views_without_caching').table) %}
 {% endmacro %}

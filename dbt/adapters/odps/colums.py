@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from dbt.adapters.base.column import Column
-from hologram import JsonDict
 from odps.models.table import TableSchema
 from odps.types import Decimal, Varchar
 
@@ -38,12 +37,13 @@ class OdpsColumn(Column):
         return "<OdpsColumn {} ({})>".format(self.name, self.data_type)
 
     def to_column_dict(self, omit_none: bool = True, validate: bool = False) -> dict:
-        original_dict = {k: v for k, v in self.__dict__ if v is not None}
+        original_dict = {k: v for k, v in self.__dict__.items() if v is not None}
         # If there are stats, merge them into the root of the dict
         # original_stats = original_dict.pop('table_stats', None)
         # if original_stats:
         #    original_dict.update(original_stats)
         return original_dict
+
     @classmethod
     def from_odps_column(cls, column: TableSchema.TableColumn):
         char_size = None
