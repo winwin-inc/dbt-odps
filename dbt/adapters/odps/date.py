@@ -33,11 +33,14 @@ class LocalDate(object):
     def get_utc(self):
         return self.date.astimezone(timezone.utc)
 
-    def fmt(self, format="%Y%m%d"):
-        return self.date.strftime(format)
+    def fmt(self, fmt="%Y%m%d"):
+        return self.date.strftime(fmt)
+
+    def format(self, fmt="%Y%m%d"):
+        return self.date.strftime(fmt)
 
     def to_date_string(self):
-        return self.fmt('%Y-%m-%d')
+        return self.format('%Y-%m-%d')
 
     @staticmethod
     def today():
@@ -48,13 +51,13 @@ class LocalDate(object):
         return LocalDate(datetime.now() - timedelta(days=1))
 
     def __eq__(self, other):
-        return self.fmt() == other.fmt()
+        return self.format() == other.format()
 
     def __str__(self):
-        return self.fmt()
+        return self.format()
 
     def __hash__(self):
-        return hash(self.fmt())
+        return hash(self.format())
 
     def add_days(self, days=1):
         return LocalDate(self.date + timedelta(days=days))
@@ -123,7 +126,7 @@ def yesterday() -> LocalDate:
 
 
 def fmt(date, fmt="%Y%m%d"):
-    return LocalDate(date).fmt(format=fmt)
+    return LocalDate(date).format(fmt)
 
 
 def days_ago(n, hour=0, minute=0, second=0, microsecond=0):
