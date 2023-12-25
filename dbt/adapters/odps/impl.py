@@ -1,4 +1,9 @@
+import os
+import pickle
+import tempfile
+import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Optional, Dict, Iterable, Any
 
 import agate
@@ -122,6 +127,13 @@ class ODPSAdapter(SQLAdapter):
         """Get a list of Relation(table or view) by SQL directly
         Use different SQL statement for view/table
         """
+        cache_enabled = os.getenv('ODPS_RELATION_CACHE_ENABLE', 'false') == 'true'
+        if cache_enabled:
+            cache_file = Path(tempfile.gettempdir()) / f"odps_relation_{schema_relation.without_quote()}"
+            if cache_file.exists() and time.time() - cache_file.stat().st_ctime < 3600:
+                logger.info(f"load relations cache from file {cache_file}")
+                with cache_file.open('rb') as f:
+                    return pickle.load(f)
         kwargs = {"schema": schema_relation}
         result_views: agate.Table = self.execute_macro("odps__list_views_without_caching", kwargs=kwargs)
         views = set()
@@ -147,6 +159,10 @@ class ODPSAdapter(SQLAdapter):
                     type=RelationType.Table,
                 )
             )
+        if cache_enabled:
+            logger.info(f"save relations to cache file {cache_file}")
+            with cache_file.open("wb") as f:
+                pickle.dump(relations, f)
         return relations
 
     @print_method_call
@@ -187,49 +203,3 @@ class ODPSAdapter(SQLAdapter):
             database = None
 
         return super().get_relation(database, schema, identifier)
-
-    """ 
-    @print_method_call
-    def _get_one_catalog(
-        self,
-        information_schema: InformationSchema,
-        schemas: Set[str],
-        manifest: Manifest,
-    ) -> agate.Table:
-        # raise Exception('_get_one_catalog')
-        # logger.info(f"_get_one_catalog   schemas {schemas} manifest:{manifest}")
-        rows = []
-        for schema in schemas:
-            for table in self.odps.list_tables(project=information_schema.database, schema=schema):
-                table = cast(Table, table)
-                table_rows = (
-                    information_schema.database,
-                    schema,
-                    table.name,
-                    "VIEW" if table.is_virtual_view else "TABLE",
-                    table.comment,
-                    table.owner,
-                )
-                for i, column in enumerate(table.schema.get_columns()):
-                    column = cast(TableSchema.TableColumn, column)
-                    column_rows = table_rows + (column.name, i, column.type, column.comment)
-                    rows.append(column_rows)
-        table = agate.Table(
-            rows,
-            [
-                "table_database",
-                "table_schema",
-                "table_name",
-                "table_type",
-                "table_comment",
-                "table_owner",
-                "column_name",
-                "column_index",
-                "column_type",
-                "column_comment",
-            ],
-        )
-        return table
-    """
-
-# may require more build out to make more user friendly to confer with team and community.
