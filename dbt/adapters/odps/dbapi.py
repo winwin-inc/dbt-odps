@@ -35,13 +35,16 @@ class ODPSCursor(Cursor):
             self._instance.wait_for_success()
         except ODPSError as e:
             logger.error(f"An ODPS error occurred: {e}")
+            raise e
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
+            raise e
 
 
 class ODPSConnection(Connection):
+
     def cursor(self, *args, **kwargs):
-        return ODPSCursor(
+        self._cursor = ODPSCursor(
             self,
             *args,
             use_sqa=self._use_sqa,
@@ -49,3 +52,8 @@ class ODPSConnection(Connection):
             hints=self._hints,
             **kwargs,
         )
+        return self._cursor
+
+    def cancel(self):
+        if self._cursor is not None:
+            self._cursor.cancel()
