@@ -236,8 +236,8 @@
   {% do return(load_result('list_views_without_caching').table) %}
 {% endmacro %}
 
-{% macro odps__get_table_columns_and_constraints_from_query(sql) -%}
-  {%- set partition_cols = config.get('partition_by', validator=validation.any[list, basestring]) -%}
+{% macro odps__get_columns_from_query(sql) %}
+{%- set partition_cols = config.get('partition_by', validator=validation.any[list, basestring]) -%}
   {%- set partition_col_names = [] -%}
   {%- if partition_cols is not none %}
     {%- if partition_cols is mapping  -%}
@@ -251,13 +251,17 @@
   {#-- Obtain the column schema provided by sql file. #}
   {%- set sql_file_provided_columns = get_column_schema_from_query(sql, config.get('sql_header', none)) -%}
   {%- set columns = [] -%}
-    {%- for c in sql_file_provided_columns -%}
+  {%- for c in sql_file_provided_columns -%}
     {%- if c.name not in partition_col_names -%}
-    {%- do columns.append(c) -%}
+      {%- do columns.append(c) -%}
     {%- endif -%}
-    {%- endfor -%}
+  {%- endfor -%}
+  {% do return(columns) %}
+{% endmacro %}
+
+{% macro odps__get_table_columns_and_constraints_from_query(sql) -%}
 (
-    {% for c in columns -%}
+    {% for c in odps__get_columns_from_query(sql) -%}
     {{ c.name }} {{ c.dtype }}{{ "," if not loop.last or raw_model_constraints }}
     {% endfor %}
 )

@@ -16,9 +16,9 @@
 
 {% macro get_insert_overwrite_sql(source_relation, target_relation, sql) %}
 
+    {%- set source_columns = odps__get_columns_from_query(sql) -%}
     {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
-    {%- set table_type = config.get('table_type') -%}
-    {%- set dest_cols_csv = dest_columns | map(attribute='quoted') | join(', ') -%}
+    {% do odps__assert_columns_equals(source_columns, dest_columns) %}
     insert overwrite table {{ target_relation }}
     {{ partition_cols(label="partition") }}
     {{ sql }}
@@ -117,4 +117,38 @@
 {% macro odps__get_incremental_default_sql(arg_dict) %}
   {#-- default mode is append, so return the sql for the same  #}
   {% do return(get_insert_into_sql(arg_dict["source_relation"], arg_dict["target_relation"], arg_dict["dest_columns"])) %}
+{% endmacro %}
+
+{% macro odps__assert_columns_equals(source_columns, target_columns) %}
+
+  {% set schema_changed = False %}
+
+  {%- set source_not_in_target = diff_columns(source_columns, target_columns) -%}
+  {%- set target_not_in_source = diff_columns(target_columns, source_columns) -%}
+
+  {% set new_target_types = diff_column_data_types(source_columns, target_columns) %}
+
+  {%- if source_not_in_target != [] -%}
+    {% set schema_changed = True %}
+  {%- elif target_not_in_source != [] or new_target_types != [] -%}
+    {% set schema_changed = True %}
+  {%- elif new_target_types != [] -%}
+    {% set schema_changed = True %}
+  {%- endif -%}
+  {%- if schema_changed -%}
+  {% set fail_msg %}
+      The source and target schemas on this incremental model are out of sync!
+      They can be reconciled in several ways:
+        - set the `on_schema_change` config to either append_new_columns or sync_all_columns, depending on your situation.
+        - Re-run the incremental model with `full_refresh: True` to update the target schema.
+        - update the schema manually and re-run the process.
+
+      Additional troubleshooting context:
+         Source columns not in target: {{ source_not_in_target }}
+         Target columns not in source: {{ target_not_in_source }}
+         New column types: {{ new_target_types }}
+  {% endset %}
+
+  {% do exceptions.raise_compiler_error(fail_msg) %}
+  {%- endif -%}
 {% endmacro %}
