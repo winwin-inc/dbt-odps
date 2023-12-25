@@ -8,7 +8,7 @@ this_directory = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(this_directory, "README.md"), encoding="utf8") as f:
     long_description = f.read()
 
-package_version = "1.0.3"
+package_version = "1.0.5"
 
 
 def _get_plugin_version_dict():
@@ -48,6 +48,6 @@ setup(
     include_package_data=True,
     install_requires=[
         f"dbt-core~={dbt_core_version}",
-        f"pyodps>=0.11.4",
+        f"pyodps==0.11.5b2",
     ],
 )
