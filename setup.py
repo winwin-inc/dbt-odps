@@ -48,6 +48,6 @@ setup(
     include_package_data=True,
     install_requires=[
         f"dbt-core~={dbt_core_version}",
-        f"pyodps~=0.11.4.1",
+        f"pyodps>=0.11.4",
     ],
 )

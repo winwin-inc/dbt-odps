@@ -8,14 +8,16 @@ from typing import List, Optional, Dict, Iterable, Any
 
 import agate
 import dbt.exceptions
+import odps
 from dbt.adapters.base import AdapterConfig
 from dbt.adapters.base.relation import BaseRelation
 from dbt.adapters.sql import SQLAdapter
 from dbt.clients import agate_helper
 from dbt.contracts.relation import RelationType
 from odps import ODPS
-from odps.errors import ODPSError
+from odps.errors import ODPSError, NoSuchObject
 from odps.models import Table
+from packaging import version
 
 import dbt
 from dbt.adapters.odps.utils import print_method_call, logger
@@ -111,9 +113,10 @@ class ODPSAdapter(SQLAdapter):
     @print_method_call
     def list_schemas(self, database: str) -> List[str]:
         try:
+            database = database.strip('`')
             return [schema.name for schema in self.odps.list_schemas(database)]
         except ODPSError as e:
-            if e.code == "ODPS-0110061":
+            if e.code == "ODPS-0110061" or str(e).endswith('is not 3-tier model project.'):
                 return ["default"]
             else:
                 raise e
@@ -134,22 +137,27 @@ class ODPSAdapter(SQLAdapter):
                 logger.info(f"load relations cache from file {cache_file}")
                 with cache_file.open('rb') as f:
                     return pickle.load(f)
-        kwargs = {"schema": schema_relation}
-        result_views: agate.Table = self.execute_macro("odps__list_views_without_caching", kwargs=kwargs)
-        views = set()
+        if version.parse(odps.__version__) >= version.parse('0.11.5b2'):
+            result_views = set([t.name for t in self.odps.list_tables(
+                project=schema_relation.database,
+                schema=schema_relation.schema,
+                type='virtual_view'
+            )])
+        else:
+            kwargs = {"schema": schema_relation}
+            result_views = set([t['table_name'] for t in self.execute_macro("odps__list_views_without_caching", kwargs=kwargs).rows])
         relations = []
-        for row in result_views.rows:
+        for row in result_views:
             relations.append(
                 self.Relation.create(
                     database=schema_relation.database,
                     schema=schema_relation.schema,
-                    identifier=row['table_name'],
+                    identifier=row,
                     type=RelationType.View,
                 )
             )
-            views.add(row['table_name'])
-        for row in self.odps.list_tables():
-            if row.name in views:
+        for row in self.odps.list_tables(project=schema_relation.database, schema=schema_relation.schema):
+            if row.name in result_views:
                 continue
             relations.append(
                 self.Relation.create(
