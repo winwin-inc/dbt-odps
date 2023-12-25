@@ -17,6 +17,9 @@ class OdpsRelation(BaseRelation):
     include_policy: Policy = field(default_factory=lambda: OdpsIncludePolicy())
     quote_character: str = "`"
 
+    def without_quote(self):
+        return self.quote(False, False, False)
+
     @classmethod
     @print_method_call
     def create(cls, database=None, schema=None, identifier=None, type=None, **kwargs):
