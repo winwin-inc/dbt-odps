@@ -4,7 +4,7 @@ from odps import ODPS
 from odps.errors import ODPSError
 from odps.models import Table
 import  pytest
-
+ 
 
 class TestOdps:
     def test_get_tables(self):
