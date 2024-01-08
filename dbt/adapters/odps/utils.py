@@ -30,7 +30,7 @@ def print_method_call(method):
 
 def remove_comments(input_string):
     # 使用正则表达式匹配 /* 开始和 */ 结束之间的内容，并将其替换为空字符串
-    result = re.sub(r'/\*.*?\*/', '', input_string, flags=re.DOTALL)
+    result = re.sub(r'/\*[^+].*?\*/', '', input_string, flags=re.DOTALL)
     return result
 
 

@@ -15,17 +15,11 @@
 #}
 
 {% macro odps__dateadd(datepart, interval, from_date_or_timestamp) %}
-    {%- if datepart == 'day' -%}
-        date_add({{from_date_or_timestamp}}, cast({{interval}} as int))
-    {% elif datepart == 'month' -%}
-        add_months({{from_date_or_timestamp}}, cast({{interval}} as int))
-    {% elif datepart == 'year' -%}
-        add_months({{from_date_or_timestamp}}, (cast({{interval}} as int)*12))
+    {%- if datepart in ['day', 'month', 'year'] %}
+       dateadd({{ from_date_or_timestamp }}, {{ interval }}, '{{ datepart }}')
     {%- elif datepart == 'hour' -%}
-        from_unixtime(unix_timestamp({{from_date_or_timestamp}}) + cast({{interval}} as int)*3600)
+       from_unixtime(unix_timestamp({{from_date_or_timestamp}}) + {{interval}}*3600)
     {%- else -%}
-
-        {{ exceptions.raise_compiler_error("macro datediff not implemented for datepart ~ '" ~ datepart ~ "' ~ on Spark") }}
-
+       {{ exceptions.raise_compiler_error("macro dateadd not implemented for datepart ~ '" ~ datepart ~ "' ~ on ODPS") }}
     {%- endif -%}
 {% endmacro %}
