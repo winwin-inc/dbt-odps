@@ -1,5 +1,5 @@
 {% macro parse_date(the_date) %}
-{% do return(modules.date.parse(the_date)) %}
+{% do return(modules.date.parse_date(the_date)) %}
 {% endmacro %}
 
 {% macro add_months(the_date, months) %}
