@@ -99,14 +99,13 @@ class LocalDate(object):
         return LocalDate(self.date.replace(month=(self.month() + 2) // 3 * 3, day=1))
 
 
-def parse(datestr: str) -> LocalDate:
+def parse_date(datestr: str) -> LocalDate:
     if re.match(r'^\d{4}-\d{2}-\d{2}$', datestr):
         return LocalDate(datetime.strptime(datestr, '%Y-%m-%d'))
     elif re.match(r'^\d{8}$', datestr):
         return LocalDate(datetime.strptime(datestr, '%Y%m%d'))
-    else:
-        raise ValueError(f"Invalid date {datestr}")
-
+    else:   # iso date
+        return LocalDate(datetime.fromisoformat(datestr))
 
 def local(date) -> LocalDate:
     """

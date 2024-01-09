@@ -6,4 +6,4 @@ macros:
     arguments:
       - name: the_date
         type: string
-        description: a literal string value for date, should be YYYYMMDD or YYYY-MM-DD format
+        description: a literal string value for date, should be YYYYMMDD or YYYY-MM-DD or iso date yyyy-mm-ddThh:mm:ss[.mmm] format
