@@ -236,6 +236,15 @@
   {% do return(load_result('list_views_without_caching').table) %}
 {% endmacro %}
 
+{% macro odps_get_desc_from_config() %}
+{%- set tab_cols = config.get('columns', validator=validation.any[list, basestring]) -%}
+{%- set tab_cols_dict = {} -%}
+{%- for item in tab_cols -%}
+{%- do tab_cols_dict.setdefault(item.name,item.description) -%}
+{%- endfor -%}
+{%- do return(tab_cols_dict) -%}
+{% endmacro %}
+
 {% macro odps__get_columns_from_query(sql) %}
 {%- set partition_cols = config.get('partition_by', validator=validation.any[list, basestring]) -%}
   {%- set partition_col_names = [] -%}
@@ -261,8 +270,9 @@
 
 {% macro odps__get_table_columns_and_constraints_from_query(sql) -%}
 (
+    {% set tab_cols = odps_get_desc_from_config() %}
     {% for c in odps__get_columns_from_query(sql) -%}
-    {{ c.name }} {{ c.dtype }}{{ "," if not loop.last or raw_model_constraints }}
+    {{ c.name }} {{ c.dtype }} {{ "COMMENT" }} '{{ tab_cols.get(c.name) }}' {{ "," if not loop.last or raw_model_constraints }}
     {% endfor %}
 )
 {%- endmacro %}
