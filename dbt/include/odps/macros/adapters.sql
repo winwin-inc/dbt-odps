@@ -37,6 +37,10 @@
   {% endif %}
 {%- endmacro -%}
 
+{% macro comment_clause_ignore() %}
+   {{ "comment" }} '{{ model.description | replace("'", "\\'") }}'
+{%- endmacro -%}
+
 {% macro lifecycle_clause(temporary) %}
   {%- set lifecycle = config.get('lifecycle') -%}
   {%- if lifecycle is not none -%}
@@ -139,6 +143,7 @@
     {{ get_table_columns_and_constraints() }}
     {{ options_clause() }}
     {{ partition_clause() }}
+    {{ comment_clause_ignore() }}
     {{ clustered_cols(label="clustered by") }}
     {{ stored_by_clause(table_type) }}
     {{ file_format_clause() }}
@@ -159,6 +164,7 @@
     create {% if is_external == true -%}external{%- endif %} table {{ relation }}
     {{ odps__get_table_columns_and_constraints_from_query(sql) }}
     {{ options_clause() }}
+    {{ comment_clause_ignore() }}
     {{ partition_clause() }}
     {{ clustered_cols(label="clustered by") }}
     {{ stored_by_clause(table_type) }}
@@ -236,15 +242,6 @@
   {% do return(load_result('list_views_without_caching').table) %}
 {% endmacro %}
 
-{% macro odps_get_desc_from_config() %}
-{%- set tab_cols = config.get('columns', validator=validation.any[list, basestring]) -%}
-{%- set tab_cols_dict = {} -%}
-{%- for item in tab_cols -%}
-{%- do tab_cols_dict.setdefault(item.name,item.description) -%}
-{%- endfor -%}
-{%- do return(tab_cols_dict) -%}
-{% endmacro %}
-
 {% macro odps__get_columns_from_query(sql) %}
 {%- set partition_cols = config.get('partition_by', validator=validation.any[list, basestring]) -%}
   {%- set partition_col_names = [] -%}
@@ -270,9 +267,9 @@
 
 {% macro odps__get_table_columns_and_constraints_from_query(sql) -%}
 (
-    {% set tab_cols = odps_get_desc_from_config() %}
+    {% set model_columns = model.columns %}
     {% for c in odps__get_columns_from_query(sql) -%}
-    {{ c.name }} {{ c.dtype }} {{ "COMMENT" }} '{{ tab_cols.get(c.name) }}' {{ "," if not loop.last or raw_model_constraints }}
+    {{ c.name }} {{ c.dtype }} {{ "COMMENT" }} '{{ model_columns[c.name].description }}' {{ "," if not loop.last or raw_model_constraints }}
     {% endfor %}
 )
 {%- endmacro %}
