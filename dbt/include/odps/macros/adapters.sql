@@ -138,47 +138,50 @@
   {%- else -%}
     {% set contract_config = config.get('contract') %}
     {% if contract_config.enforced %}
-    set odps.sql.submit.mode='script';
-    create {% if is_external == true -%}external{%- endif %} table {{ relation }}
-    {{ get_table_columns_and_constraints() }}
-    {{ options_clause() }}
-    {{ partition_clause() }}
-    {{ comment_clause_ignore() }}
-    {{ clustered_cols(label="clustered by") }}
-    {{ stored_by_clause(table_type) }}
-    {{ file_format_clause() }}
-    {{ location_clause() }}
-    {{ comment_clause() }}
-    {{ properties_clause() }}
-    {{ lifecycle_clause(temporary) }}
-    ;
+      {# set odps.sql.submit.mode='script'; #}
+      create {% if is_external == true -%}external{%- endif %} table {{ relation }}
+      {{ get_table_columns_and_constraints() }}
+      {{ options_clause() }}
+      {{ partition_clause() }}
+      {{ comment_clause_ignore() }}
+      {{ clustered_cols(label="clustered by") }}
+      {{ stored_by_clause(table_type) }}
+      {{ file_format_clause() }}
+      {{ location_clause() }}
+      {{ comment_clause() }}
+      {{ properties_clause() }}
+      {{ lifecycle_clause(temporary) }}
+      ;
 
-    {{ get_assert_columns_equivalent(sql) }}
-    {%- set sql = get_select_subquery(sql) %}
-    insert into {{ relation }} {{ partition_cols(label="partition") }}
-    (
-        {{ sql }}
-    );
+      {{ get_assert_columns_equivalent(sql) }}
+      {%- set sql = get_select_subquery(sql) %}
+      insert into {{ relation }} {{ partition_cols(label="partition") }}
+      (
+          {{ sql }}
+      );
     {% elif config.get('partition_by') %}
-    set odps.sql.submit.mode='script';
-    create {% if is_external == true -%}external{%- endif %} table {{ relation }}
-    {{ odps__get_table_columns_and_constraints_from_query(sql) }}
-    {{ options_clause() }}
-    {{ comment_clause_ignore() }}
-    {{ partition_clause() }}
-    {{ clustered_cols(label="clustered by") }}
-    {{ stored_by_clause(table_type) }}
-    {{ file_format_clause() }}
-    {{ location_clause() }}
-    {{ comment_clause() }}
-    {{ properties_clause() }}
-    {{ lifecycle_clause(temporary) }}
-    ;
+      {# set odps.sql.submit.mode='script'; #}
+       {% call statement('create_table', auto_begin=False) -%}
 
-    insert into {{ relation }} {{ partition_cols(label="partition") }}
-    (
-        {{ sql }}
-    );
+      create {% if is_external == true -%}external{%- endif %} table {{ relation }}
+      {{ odps__get_table_columns_and_constraints_from_query(sql) }}
+      {{ options_clause() }}
+      {{ comment_clause_ignore() }}
+      {{ partition_clause() }}
+      {{ clustered_cols(label="clustered by") }}
+      {{ stored_by_clause(table_type) }}
+      {{ file_format_clause() }}
+      {{ location_clause() }}
+      {{ comment_clause() }}
+      {{ properties_clause() }}
+      {{ lifecycle_clause(temporary) }}
+      ;
+
+      {% endcall %}
+      insert into {{ relation }} {{ partition_cols(label="partition") }}
+      (
+          {{ sql }}
+      );
     {%- else -%}
       create table {{ relation }}
       {{ lifecycle_clause(temporary) }}
