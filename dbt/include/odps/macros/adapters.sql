@@ -139,19 +139,21 @@
     {% set contract_config = config.get('contract') %}
     {% if contract_config.enforced %}
       {# set odps.sql.submit.mode='script'; #}
-      create {% if is_external == true -%}external{%- endif %} table {{ relation }}
-      {{ get_table_columns_and_constraints() }}
-      {{ options_clause() }}
-      {{ partition_clause() }}
-      {{ comment_clause_ignore() }}
-      {{ clustered_cols(label="clustered by") }}
-      {{ stored_by_clause(table_type) }}
-      {{ file_format_clause() }}
-      {{ location_clause() }}
-      {{ comment_clause() }}
-      {{ properties_clause() }}
-      {{ lifecycle_clause(temporary) }}
-      ;
+      {% call statement('create_table', auto_begin=False) -%}
+          create {% if is_external == true -%}external{%- endif %} table {{ relation }}
+          {{ get_table_columns_and_constraints() }}
+          {{ options_clause() }}
+          {{ partition_clause() }}
+          {{ comment_clause_ignore() }}
+          {{ clustered_cols(label="clustered by") }}
+          {{ stored_by_clause(table_type) }}
+          {{ file_format_clause() }}
+          {{ location_clause() }}
+          {{ comment_clause() }}
+          {{ properties_clause() }}
+          {{ lifecycle_clause(temporary) }}
+          ;
+      {% endcall %}
 
       {{ get_assert_columns_equivalent(sql) }}
       {%- set sql = get_select_subquery(sql) %}
