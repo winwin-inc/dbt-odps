@@ -274,7 +274,12 @@
 (
     {% set model_columns = model.columns %}
     {% for c in odps__get_columns_from_query(sql) -%}
-    {{ c.name }} {{ c.dtype }} {{ "COMMENT" }} '{{ model_columns[c.name].description }}' {{ "," if not loop.last or raw_model_constraints }}
+    {{ c.name }} {{ c.dtype }} 
+    {% if model_columns and c.name in  model_columns -%}
+       {{ "COMMENT" }} '{{ model_columns[c.name].description }}' 
+    {%- endif %}
+    {{ "," if not loop.last or raw_model_constraints }}
+
     {% endfor %}
 )
 {%- endmacro %}
