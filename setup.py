@@ -11,7 +11,7 @@ this_directory = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(this_directory, "README.md"), encoding="utf8") as f:
     long_description = f.read()
 
-package_version = "1.0.13"
+package_version = "1.0.13a"
 here = os.path.abspath(os.path.dirname(__file__))
 
 
