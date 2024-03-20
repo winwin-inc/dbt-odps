@@ -1,10 +1,10 @@
 import os
+
 import odps
 from odps import ODPS
 from odps.errors import ODPSError
 from odps.models import Table
-import  pytest
- 
+
 
 class TestOdps:
     def test_get_tables(self):
@@ -15,7 +15,7 @@ class TestOdps:
             os.getenv('ODPS_PROJECT'),
             os.getenv('ODPS_ENDPOINT')
         )
-        tables = o.list_tables(type='virtual_view')
+        tables = o.list_tables(type='external_table')
         table: Table = next(tables)
         print(table.name)
 

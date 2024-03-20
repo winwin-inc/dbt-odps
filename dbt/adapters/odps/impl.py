@@ -167,6 +167,19 @@ class ODPSAdapter(SQLAdapter):
                     type=RelationType.Table,
                 )
             )
+        for row in self.odps.list_tables(project=schema_relation.database, schema=schema_relation.schema, type="external_table"):
+            if row.name in result_views:
+                continue
+            relations.append(
+                self.Relation.create(
+                    database=schema_relation.database,
+                    schema=schema_relation.schema,
+                    identifier=row.name,
+                    type=RelationType.External,
+                )
+            )
+
+
         if cache_enabled:
             logger.info(f"save relations to cache file {cache_file}")
             with cache_file.open("wb") as f:
