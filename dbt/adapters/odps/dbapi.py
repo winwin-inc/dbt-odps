@@ -28,10 +28,10 @@ class ODPSCursor(Cursor):
         if self._use_sqa:
             run_sql = self._run_sqa_with_fallback
         hints, sql = parse_hints(sql)
-        logger.error(f"ODPSCursor.execute {sql}")
+        logger.debug(f"ODPSCursor.execute {sql}")
         try:
             self._instance = run_sql(sql, hints=hints | (self._hints or {}))
-            logger.error(f"instance log url: {self._instance.get_logview_address()}")
+            logger.debug(f"instance log url: {self._instance.get_logview_address()}")
             self._instance.wait_for_success()
         except ODPSError as e:
             logger.error(f"An ODPS error occurred: {e}")

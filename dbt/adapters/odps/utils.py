@@ -17,12 +17,12 @@ def print_method_call(method):
             obj_name = f"{args[0].__class__.__name__}." if hasattr(args[0], '__class__') else ''
 
         if DEBUG_ODPS:
-            logger.error(f"Calling {obj_name}{method.__name__} with args: {args[1:]}, kwargs: {kwargs}")
+            logger.debug(f"Calling {obj_name}{method.__name__} with args: {args[1:]}, kwargs: {kwargs}")
 
         result = method(*args, **kwargs)
 
         if DEBUG_ODPS:
-            logger.error(f"{obj_name}{method.__name__} returned: {result}")
+            logger.debug(f"{obj_name}{method.__name__} returned: {result}")
         return result
 
     return wrapper
