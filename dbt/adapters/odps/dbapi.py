@@ -31,7 +31,7 @@ class ODPSCursor(Cursor):
         logger.debug(f"ODPSCursor.execute {sql}")
         try:
             self._instance = run_sql(sql, hints=hints | (self._hints or {}))
-            logger.debug(f"instance log url: {self._instance.get_logview_address()}")
+            logger.debug(f"""instance log url: <a href="{self._instance.get_logview_address()}" /> """)
             self._instance.wait_for_success()
         except ODPSError as e:
             logger.error(f"An ODPS error occurred: {e}")
