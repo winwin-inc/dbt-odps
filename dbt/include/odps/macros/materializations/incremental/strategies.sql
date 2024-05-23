@@ -15,6 +15,8 @@
 #}
 
 {% macro get_insert_overwrite_sql(source_relation, target_relation, sql) %}
+     {%- set sql_header = config.get('sql_header', none) %}
+    {{ sql_header if sql_header is not none }}
 
     {%- set source_columns = odps__get_columns_from_query(sql) -%}
     {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
@@ -27,6 +29,10 @@
 
 
 {% macro get_insert_into_sql(source_relation, target_relation, dest_columns) %}
+     {%- set sql_header = config.get('sql_header', none) %}
+    {{ sql_header if sql_header is not none }}
+
+
     {%- set dest_cols_csv = dest_columns | map(attribute='quoted') | join(', ') -%}
     insert into {{ target_relation }} ({{ dest_cols_csv }})
     (
@@ -51,6 +57,9 @@
 {% endmacro %}
 
 {% macro odps__get_merge_sql(target, source, unique_key, dest_columns, predicates=none) %}
+  {%- set sql_header = config.get('sql_header', none) %}
+    {{ sql_header if sql_header is not none }}
+    
   {%- set predicates = [] if predicates is none else [] + predicates -%}
   {%- set merge_update_columns = config.get('merge_update_columns') -%}
   {%- set merge_exclude_columns = config.get('merge_exclude_columns') -%}
@@ -95,6 +104,8 @@
 
 
 {% macro dbt_odps_get_incremental_sql(strategy, source, target, unique_key, dest_columns, sql) %}
+
+
   {%- if strategy == 'append' -%}
     {#-- insert new records into existing table, without updating or overwriting #}
     {{ get_insert_into_sql(source, target, dest_columns) }}

@@ -131,7 +131,14 @@
 {% endmacro %}
 
 {% macro odps__create_table_as(temporary, relation, sql) -%}
-  {%- set is_external = config.get('external') -%}
+ 
+  {%- set sql_header = config.get('sql_header', none) -%}
+
+  {{ sql_header if sql_header is not none }}
+
+
+
+  {% set is_external = config.get('external') -%}
   {%- set table_type = config.get('table_type') -%}
   {%- if temporary -%}
     {{ create_temporary_view(relation, sql) }}
