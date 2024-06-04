@@ -5,7 +5,7 @@ from dbt.events import AdapterLogger
 import os
 
 logger = AdapterLogger("odps")
-DEBUG_ODPS = True  # os.getenv("ODPS_DEBUG", "false").lower() == "true"
+DEBUG_ODPS = os.getenv("ODPS_DEBUG", "false").lower() == "true"
 
 
 def print_method_call(method):
