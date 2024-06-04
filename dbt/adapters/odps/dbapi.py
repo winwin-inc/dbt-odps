@@ -9,6 +9,13 @@ from dbt.adapters.odps.utils import print_method_call, logger, parse_hints, remo
 
 
 class ODPSCursor(Cursor):
+    def __init__(self, *argv , **kwargs):
+        super().__init__( *argv, **kwargs)
+
+        self._priority  = None
+        if 'priority' in  kwargs:
+            self._priority = kwargs['priority']
+         
     @print_method_call
     def execute(self, operation, parameters=None, **kwargs):
         # prepare statement
@@ -43,6 +50,12 @@ class ODPSCursor(Cursor):
 
 
 class ODPSConnection(Connection):
+    # def __init__(self, *argv , **kwargs):
+    #     super().__init__( *argv, **kwargs)
+    #     self._priority  = None
+    #     if 'priority' in  kwargs:
+    #         self._priority = kwargs['priority']
+
 
     def cursor(self, *args, **kwargs):
         self._cursor = ODPSCursor(
@@ -51,6 +64,7 @@ class ODPSConnection(Connection):
             use_sqa=self._use_sqa,
             fallback_policy=self._fallback_policy,
             hints=self._hints,
+            priority = self._priority,
             **kwargs,
         )
         return self._cursor

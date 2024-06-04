@@ -24,7 +24,7 @@ class ODPSCredentials(Credentials):
     endpoint: str
     access_id: str
     secret_access_key: str
-
+    priority: int = 4
     hints: Optional[Dict[str, str]] = None
 
     _ALIASES = {"ak": "access_id", "sk": "secret_access_key"}
@@ -97,7 +97,8 @@ class ODPSConnectionManager(SQLConnectionManager):
                 access_id=credentials.access_id,
                 secret_access_key=credentials.secret_access_key,
                 project=credentials.database,
-                hints=credentials.hints,
+                priority = credentials.priority,
+                hints=credentials.hints
             )
             # if credentials.schema != "default":
             #    kwargs["schema"] = credentials.schema
