@@ -12,3 +12,6 @@ prompts:
   secret_access_key:
     hint: "The secret access key of your account."
     hide_input: true
+  priority:
+    hint: "The priority of odps task"
+    hide_input: true

@@ -26,4 +26,5 @@ def dbt_profile_target():
         'database': os.getenv('ODPS_PROJECT'),
         'endpoint': os.getenv('ODPS_ENDPOINT'),
         'schema': 'default',
+        'priority': 4
     }

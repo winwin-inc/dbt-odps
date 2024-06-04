@@ -24,7 +24,7 @@ class ODPSCredentials(Credentials):
     endpoint: str
     access_id: str
     secret_access_key: str
-    priority: int = 4
+    priority: Optional[int] = None
     hints: Optional[Dict[str, str]] = None
 
     _ALIASES = {"ak": "access_id", "sk": "secret_access_key"}

@@ -35,11 +35,10 @@ class ODPSCursor(Cursor):
         if self._use_sqa:
             run_sql = self._run_sqa_with_fallback
         logger.debug(f"ODPSCursor.execute  sql: {sql}")
-        hints = {'odps.sql.submit.mode':  'script'}
 
         try:
-            self._instance = run_sql(sql, hints= hints )
-            logger.debug(f"""instance log url: <a href="{self._instance.get_logview_address()}" /> """)
+            self._instance = run_sql(sql, hints= self._hints, priority = self._priority)
+            logger.debug(f"""instance log url: {self._instance.get_logview_address()}""")
             self._instance.wait_for_success()
         except ODPSError as e:
             logger.error(f"An ODPS error occurred: {e}")
@@ -50,22 +49,23 @@ class ODPSCursor(Cursor):
 
 
 class ODPSConnection(Connection):
-    # def __init__(self, *argv , **kwargs):
-    #     super().__init__( *argv, **kwargs)
-    #     self._priority  = None
-    #     if 'priority' in  kwargs:
-    #         self._priority = kwargs['priority']
-
+    def __init__(self, *argv , **kwargs):
+        self._priority  = None
+        if 'priority' in  kwargs:
+             self._priority = kwargs.pop('priority',None)
+        
+        super().__init__( *argv, **kwargs)
 
     def cursor(self, *args, **kwargs):
+        kwargs['priority'] = self._priority
+    
         self._cursor = ODPSCursor(
             self,
             *args,
             use_sqa=self._use_sqa,
             fallback_policy=self._fallback_policy,
             hints=self._hints,
-            priority = self._priority,
-            **kwargs,
+            **kwargs
         )
         return self._cursor
 
