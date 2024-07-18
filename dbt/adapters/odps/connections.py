@@ -89,7 +89,7 @@ class ODPSConnectionManager(SQLConnectionManager):
 
         credentials: ODPSCredentials = connection.credentials
 
-        logger.debug(f"open credentials: {credentials}")
+        #logger.debug(f"open credentials: {credentials}")
 
         try:
             kwargs = dict(
