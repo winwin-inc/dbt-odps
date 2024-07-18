@@ -118,10 +118,11 @@ class ODPSConnectionManager(SQLConnectionManager):
             # logger.error(f"ODPSConnectionManager.open {traceback.format_stack() }")
 
         except Exception as exc:
-            raise dbt.exceptions.FailedToConnectError(f"Project does not exist.")
             logger.debug("Error opening connection: {}".format(exc))
             connection.handle = None
             connection.state = "fail"
+            raise dbt.exceptions.FailedToConnectError(f"Project does not exist.")
+            
 
         return connection
 
