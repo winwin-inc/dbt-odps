@@ -29,20 +29,32 @@
 
 
 {% macro odps__snapshot_merge_sql(target, source, insert_cols) -%}
+    {%- set insert_cols_csv = insert_cols | join(', ') -%}
 
-    merge into {{ target }} as DBT_INTERNAL_DEST
-    using {{ source }} as DBT_INTERNAL_SOURCE
-    on DBT_INTERNAL_SOURCE.dbt_scd_id = DBT_INTERNAL_DEST.dbt_scd_id
-    when matched
-     and DBT_INTERNAL_DEST.dbt_valid_to is null
-     and DBT_INTERNAL_SOURCE.dbt_change_type in ('update', 'delete')
-        then update
-        set dbt_valid_to = DBT_INTERNAL_SOURCE.dbt_valid_to
+    insert overwrite table {{ target}} 
+    select 
+        {% for column in insert_cols -%}
+            {%- if 'dbt_valid_to' in column  -%}
+                DBT_INTERNAL_SOURCE.{{ column }} 
+            {%- else -%}
+                DBT_INTERNAL_TARGET.{{ column }} 
+            {%- endif -%}
+            {%- if not loop.last -%}, {%- endif -%}
+        {%- endfor %}
+    from {{ target }} as  DBT_INTERNAL_TARGET
+    left join {{ source }} as DBT_INTERNAL_SOURCE
+    on DBT_INTERNAL_TARGET.dbt_scd_id = DBT_INTERNAL_SOURCE.dbt_scd_id
+    where DBT_INTERNAL_SOURCE.dbt_change_type   in ('update', 'delete')
+      and DBT_INTERNAL_TARGET.dbt_valid_to is null 
+    union all 
+    select 
+      {% for column in insert_cols -%}
+        DBT_INTERNAL_SOURCE.{{ column }} 
+        {%- if not loop.last %}, {%- endif %}
+      {%- endfor %}
+    from {{ source }} as DBT_INTERNAL_SOURCE
+    where DBT_INTERNAL_SOURCE.dbt_change_type = 'insert';
 
-    when not matched
-     and DBT_INTERNAL_SOURCE.dbt_change_type = 'insert'
-        then insert *
-    ;
 {% endmacro %}
 
 
@@ -90,7 +102,6 @@
 
   {%- set strategy_name = config.get('strategy') -%}
   {%- set unique_key = config.get('unique_key') %}
-  {%- set file_format = config.get('file_format', 'parquet') -%}
 
   {% set target_relation_exists, target_relation = get_or_create_relation(
           database=none,
@@ -98,22 +109,8 @@
           identifier=target_table,
           type='table') -%}
 
-  {%- if file_format != 'delta' -%}
-    {% set invalid_format_msg -%}
-      Invalid file format: {{ file_format }}
-      Snapshot functionality requires file_format be set to 'delta'
-    {%- endset %}
-    {% do exceptions.raise_compiler_error(invalid_format_msg) %}
-  {% endif %}
 
-  {%- if target_relation_exists -%}
-    {%- if not target_relation.is_delta -%}
-      {% set invalid_format_msg -%}
-        The existing table {{ model.schema }}.{{ target_table }} is in another format than 'delta'
-      {%- endset %}
-      {% do exceptions.raise_compiler_error(invalid_format_msg) %}
-    {% endif %}
-  {% endif %}
+  
 
   {% if not adapter.check_schema_exists(model.database, model.schema) %}
     {% do create_schema(model.database, model.schema) %}
@@ -154,22 +151,23 @@
 
       {% do create_columns(target_relation, missing_columns) %}
 
-      {% set source_columns = adapter.get_columns_in_relation(staging_table)
+      {% set dest_columns = adapter.get_columns_in_relation(target_relation)
                                    | rejectattr('name', 'equalto', 'dbt_change_type')
                                    | rejectattr('name', 'equalto', 'DBT_CHANGE_TYPE')
                                    | rejectattr('name', 'equalto', 'dbt_unique_key')
                                    | rejectattr('name', 'equalto', 'DBT_UNIQUE_KEY')
                                    | list %}
 
-      {% set quoted_source_columns = [] %}
-      {% for column in source_columns %}
-        {% do quoted_source_columns.append(adapter.quote(column.name)) %}
+      {% set quoted_dest_columns = [] %}
+      {% for column in dest_columns %}
+        {% do quoted_dest_columns.append(adapter.quote(column.name)) %}
       {% endfor %}
 
       {% set final_sql = snapshot_merge_sql(
             target = target_relation,
             source = staging_table,
-            insert_cols = quoted_source_columns
+            insert_cols = quoted_dest_columns,
+            
          )
       %}
 
