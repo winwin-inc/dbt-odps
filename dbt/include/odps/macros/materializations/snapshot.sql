@@ -35,17 +35,19 @@
     select 
         {% for column in insert_cols -%}
             {%- if 'dbt_valid_to' in column  -%}
-                DBT_INTERNAL_SOURCE.{{ column }} 
+                case when  DBT_INTERNAL_SOURCE.dbt_change_type   in ('update', 'delete')
+                           and DBT_INTERNAL_TARGET.dbt_valid_to is null
+                          then     DBT_INTERNAL_SOURCE.{{ column }} 
+                     else  DBT_INTERNAL_TARGET.{{ column }} 
+                     end dbt_valid_to 
             {%- else -%}
-                DBT_INTERNAL_TARGET.{{ column }} 
+                 DBT_INTERNAL_TARGET.{{ column }}  
             {%- endif -%}
             {%- if not loop.last -%}, {%- endif -%}
         {%- endfor %}
     from {{ target }} as  DBT_INTERNAL_TARGET
     left join {{ source }} as DBT_INTERNAL_SOURCE
     on DBT_INTERNAL_TARGET.dbt_scd_id = DBT_INTERNAL_SOURCE.dbt_scd_id
-    where DBT_INTERNAL_SOURCE.dbt_change_type   in ('update', 'delete')
-      and DBT_INTERNAL_TARGET.dbt_valid_to is null 
     union all 
     select 
       {% for column in insert_cols -%}
