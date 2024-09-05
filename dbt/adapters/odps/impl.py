@@ -12,8 +12,8 @@ import odps
 from dbt.adapters.base import AdapterConfig
 from dbt.adapters.base.relation import BaseRelation
 from dbt.adapters.sql import SQLAdapter
-from dbt.clients import agate_helper
-from dbt.contracts.relation import RelationType
+# from dbt.contracts.relation import RelationType
+from dbt.adapters.contracts.relation import RelationType
 from odps import ODPS
 from odps.errors import ODPSError, NoSuchObject
 from odps.models import Table

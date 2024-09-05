@@ -11,7 +11,7 @@ this_directory = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(this_directory, "README.md"), encoding="utf8") as f:
     long_description = f.read()
 
-package_version = "1.0.17"
+package_version = "2.0.0a1"
 here = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -89,8 +89,8 @@ setup(
     packages=find_namespace_packages(include=["dbt", "dbt.*"]),
     include_package_data=True,
     install_requires=[
-        f"dbt-core~={dbt_core_version}",
-        f"pyodps==0.11.5b2",
+        f"dbt-core>={dbt_core_version}",
+        f"pyodps",
     ],
      # $ setup.py upload support.
     cmdclass={

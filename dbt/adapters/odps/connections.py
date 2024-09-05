@@ -3,10 +3,12 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Union
 
 import dbt.exceptions
-from dbt.adapters.base import Credentials
+from dbt.adapters.contracts.connection import AdapterResponse, Credentials,ConnectionState,AdapterRequiredConfig
+from multiprocessing.context import SpawnContext
+#from dbt.adapters.base import Credentials
 from dbt.adapters.sql import SQLConnectionManager
 # from dbt.logger import GLOBAL_LOGGER as logger
-from dbt.contracts.connection import AdapterResponse, ConnectionState, AdapterRequiredConfig
+#from dbt.contracts.connection import AdapterResponse, ConnectionState, AdapterRequiredConfig
 
 from dbt.adapters.odps.utils import print_method_call, logger
 from .dbapi import ODPSConnection
@@ -52,11 +54,11 @@ class ODPSCredentials(Credentials):
 class ODPSConnectionManager(SQLConnectionManager):
     TYPE = "odps"
 
-    def __init__(self, profile: AdapterRequiredConfig):
+    def __init__(self, profile: AdapterRequiredConfig, mp_context: SpawnContext):
         # disable query comment for odps, since it's not supported
         # profile.query_comment.comment = None
 
-        super().__init__(profile)
+        super().__init__(profile, mp_context)
 
     @contextmanager
     def exception_handler(self, sql):

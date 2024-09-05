@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from dbt.adapters.base.relation import BaseRelation
-from dbt.contracts.relation import Policy, RelationType
+from dbt.adapters.contracts.relation import Policy, RelationType
 from odps.models.table import Table
 from dbt.adapters.odps.utils import print_method_call, logger
 

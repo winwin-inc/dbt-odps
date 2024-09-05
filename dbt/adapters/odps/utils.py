@@ -1,7 +1,9 @@
 import ast
 import re
 
-from dbt.events import AdapterLogger
+from dbt.adapters.events.logging import AdapterLogger
+
+
 import os
 
 logger = AdapterLogger("odps")
