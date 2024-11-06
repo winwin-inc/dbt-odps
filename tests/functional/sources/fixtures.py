@@ -4,8 +4,7 @@ models_simple_sql = """
  {{ config(materialized = "table")}}
 
 select branch_id
-from {{ source('dim','view_public_branch')}}
-            where ds = 20241001 
+from {{ source('dim','my_source_table')}}
 """
 
 models_simple_schema_yml = """version: 2
@@ -17,10 +16,10 @@ models:
 
 sources:
   - name: dim
-    database: zhidou_hz_dev 
+    database: source_project 
     schema: default
     tables:
-      - name: view_public_branch 
+      - name: my_source_table 
 
 
 """
