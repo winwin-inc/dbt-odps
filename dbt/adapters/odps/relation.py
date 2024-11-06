@@ -3,11 +3,10 @@ from dbt.adapters.base.relation import BaseRelation,InformationSchema
 from dbt.contracts.relation import Policy, RelationType,ComponentName,Path
 from odps.models.table import Table
 from .utils import print_method_call, logger
-from .global_vars import g_use_schema
 from typing import FrozenSet, Optional, TypeVar, Type
  
 
- 
+
 @dataclass
 class OdpsIncludePolicy(Policy):
     database: bool = True
