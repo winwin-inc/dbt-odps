@@ -11,8 +11,6 @@ from dbt.contracts.connection import AdapterResponse, ConnectionState, AdapterRe
 from dbt.adapters.odps.utils import print_method_call, logger
 from .dbapi import ODPSConnection
 
-
-
 @dataclass
 class ODPSCredentials(Credentials):
     """
@@ -92,16 +90,19 @@ class ODPSConnectionManager(SQLConnectionManager):
         #logger.debug(f"open credentials: {credentials}")
 
         try:
+            hints = credentials.hints or {}
+            hints["odps.namespace.schema"] = "true"
+
             kwargs = dict(
                 endpoint=credentials.endpoint,
                 access_id=credentials.access_id,
                 secret_access_key=credentials.secret_access_key,
                 project=credentials.database,
                 priority = credentials.priority,
-                hints=credentials.hints
+                hints=hints
             )
-            # if credentials.schema != "default":
-            #    kwargs["schema"] = credentials.schema
+           
+            
 
             # logger.debug(f"open ODPSConnection kwargs: {kwargs }")    
             handle = ODPSConnection(**kwargs)

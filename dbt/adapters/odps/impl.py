@@ -3,6 +3,7 @@ import pickle
 import tempfile
 import time
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional, Dict, Iterable, Any
 
@@ -49,7 +50,9 @@ class ODPSAdapter(SQLAdapter):
     @property
     def odps(self) -> ODPS:
         return self.connections.get_thread_connection().handle.odps
-
+    def get_odps_client(self):
+        conn = self.connections.get_thread_connection()
+        return conn.handle.odps
     @property
     def credentials(self) -> ODPSCredentials:
         return self.config.credentials
@@ -85,41 +88,47 @@ class ODPSAdapter(SQLAdapter):
     def create_schema(self, relation: BaseRelation) -> None:
         """ODPS does not support schemas, so this is a no-op"""
         try:
-            self.odps.create_schema(relation.identifier, relation.database)
+            if relation.schema:
+                self.odps.create_schema(relation.schema, relation.database)
         except ODPSError as e:
-            if e.code == "ODPS-0110061":
+            if e.code in ( "ODPS-0110061","ObjectAlreadyExists"):
                 return
             else:
                 raise e
 
     def drop_schema(self, relation: OdpsRelation) -> None:
         """ODPS does not support schemas, so this is a no-op"""
-        try:
-            self.odps.delete_schema(relation.identifier, relation.database)
-        except ODPSError as e:
-            if e.code == "ODPS-0110061":
-                return
-            else:
-                raise e
+        logger.debug(f"drop_schema: '{relation.project}.{relation.schema}'")
+        
+      
 
     def quote(self, identifier):
         return "`{}`".format(identifier)
 
+    @lru_cache(maxsize=100)  # Cache results with no limit on size
+    def support_namespace_schema(self, project: str):
+        return self.get_odps_client().get_project(project).get_property("odps.schema.model.enabled",
+                                                                        "false") == "true"
+    
     @print_method_call
     def check_schema_exists(self, database: str, schema: str) -> bool:
-        """always return true, as ODPS does not have schemas."""
-        return True
+        database = database.strip('`')
+        if not self.support_namespace_schema(database):
+            return False
+        schema = schema.strip('`')
+        schema_exist = self.odps.exist_schema(schema, database)
+        return schema_exist
 
     @print_method_call
     def list_schemas(self, database: str) -> List[str]:
-        try:
-            database = database.strip('`')
-            return [schema.name for schema in self.odps.list_schemas(database)]
-        except ODPSError as e:
-            if e.code == "ODPS-0110061" or str(e).endswith('is not 3-tier model project.'):
-                return ["default"]
-            else:
-                raise e
+        database = database.split('.')[0]
+        database = database.strip('`')
+        if not self.support_namespace_schema(database):
+            return ["default"]
+
+        res = [schema.name for schema in self.get_odps_client().list_schemas(database)]
+
+        return res
 
     @print_method_call
     def list_relations_without_caching(

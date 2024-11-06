@@ -1,11 +1,10 @@
 import pytest
-
+from dbt.flags import set_from_args
+from argparse import Namespace
 import os
 
-# import json
+set_from_args(Namespace(), None)
 
-# Import the functional fixtures as a plugin
-# Note: fixtures with session scope need to be local
 
 pytest_plugins = ["dbt.tests.fixtures.project"]
 
@@ -18,7 +17,8 @@ def unique_schema(request, prefix) -> str:
 # The profile dictionary, used to write out profiles.yml
 @pytest.fixture(scope="class")
 def dbt_profile_target():
-    return {
+
+    profile_yml =  {
         'type': 'odps',
         "threads": 1,
         'access_id': os.getenv('ODPS_ACCESS_ID'),
@@ -26,5 +26,8 @@ def dbt_profile_target():
         'database': os.getenv('ODPS_PROJECT'),
         'endpoint': os.getenv('ODPS_ENDPOINT'),
         'schema': 'default',
+        'threads': 1,
         'priority': 4
     }
+
+    return profile_yml
