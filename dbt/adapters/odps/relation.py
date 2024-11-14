@@ -45,11 +45,14 @@ class OdpsRelation(BaseRelation):
         return self.path.schema
     
     def render(self) -> str:
-        render_str = self.project
+        render_str = ''
+
+        if self.project:
+           render_str = self.project 
         if self.schema:
-            render_str += "." + self.schema
+            render_str = render_str +  "." + self.schema
         if self.table:
-            render_str += "." + self.table
+            render_str = render_str + "." + self.table
         return render_str 
     def information_schema(
         self, identifier: Optional[str] = None
