@@ -2,6 +2,7 @@ import os
 import pickle
 import tempfile
 import time
+from datetime import datetime
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -13,6 +14,9 @@ import odps
 from dbt.adapters.base import AdapterConfig
 from dbt.adapters.base.relation import BaseRelation
 from dbt.adapters.sql import SQLAdapter
+from dbt.adapters.capability import Capability, CapabilityDict, CapabilitySupport, Support
+from dbt.adapters.base.impl import FreshnessResponse
+
 from dbt.clients import agate_helper
 from dbt.contracts.relation import RelationType
 from odps import ODPS
@@ -46,6 +50,13 @@ class ODPSAdapter(SQLAdapter):
     Relation = OdpsRelation
     Column = OdpsColumn
     AdapterSpecificConfigs = OdpsConfig
+
+    _capabilities: CapabilityDict = CapabilityDict(
+        {
+            Capability.TableLastModifiedMetadata: CapabilitySupport(support=Support.Full),
+            Capability.SchemaMetadataByRelations: CapabilitySupport(support=Support.Full),
+        }
+    )
 
     @property
     def odps(self) -> ODPS:
@@ -201,6 +212,25 @@ class ODPSAdapter(SQLAdapter):
             relation.identifier,
             project=relation.database,
         )
+    @print_method_call
+    def calculate_freshness_from_metadata(
+        self,
+        source: BaseRelation,
+        manifest: 'Optional[Manifest]' = None,
+     ):
+        table = self.get_odps_table_by_relation(source)
+      
+        snapshot = datetime.now()
+
+        freshness = FreshnessResponse(
+            max_loaded_at=table.last_data_modified_time,
+            snapshotted_at=snapshot,
+            age=(snapshot - table.last_data_modified_time).total_seconds(),
+        )
+
+        logger.debug(f"calculate_freshness_from_metadata {freshness}")
+        return None, freshness
+        
 
     @print_method_call
     def get_odps_table_if_exists(self, name, project=None) -> Optional[Table]:
