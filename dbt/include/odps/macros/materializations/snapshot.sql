@@ -65,7 +65,7 @@
 
     {%- set tmp_relation = api.Relation.create(identifier=tmp_identifier,
                                                   schema=target_relation.schema,
-                                                  database=none,
+                                                  database=target_relation.database,
                                                   type='view') -%}
 
     {% set select = snapshot_staging_table(strategy, sql, target_relation) %}
@@ -106,7 +106,7 @@
   {%- set unique_key = config.get('unique_key') %}
 
   {% set target_relation_exists, target_relation = get_or_create_relation(
-          database=none,
+          database=model.database,
           schema=model.schema,
           identifier=target_table,
           type='table') -%}

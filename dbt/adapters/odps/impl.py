@@ -259,7 +259,7 @@ class ODPSAdapter(SQLAdapter):
     @print_method_call
     def get_relation(self, database: str, schema: str, identifier: str) -> Optional[BaseRelation]:
         """Get a Relation for own list"""
-        if not self.Relation.get_default_quote_policy().database:
-            database = None
+        # if not self.Relation.get_default_quote_policy().database:
+        #     database = None
 
         return super().get_relation(database, schema, identifier)
