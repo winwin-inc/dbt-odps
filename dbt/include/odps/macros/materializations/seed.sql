@@ -40,18 +40,20 @@
 
   {% for chunk in agate_table.rows | batch(batch_size) %}
       {% set sql %}
-          insert into {{ this.render() }} ({{ cols_sql }}) values
-          {% for row in chunk -%}
-              ({%- for column in agate_table.column_names -%}
-                  {%- if data_types[column] == 'string' -%}
+      insert into {{ this.render() }} ({{ cols_sql }}) values
+        {% for row in chunk -%}
+            ({%- for column in agate_table.column_names -%}
+                {%- if row[column] is none -%}
+                    null
+                {%- elif data_types[column] == 'string' -%}
                     '{{ row[column] }}'
-                  {%- else -%}
+                {%- else -%}
                     cast('{{ row[column] }}' as {{ data_types[column] }})
-                  {%- endif -%}
-                  {%- if not loop.last%},{%- endif %}
-              {%- endfor -%})
-              {%- if not loop.last%},{%- endif %}
-          {%- endfor %}
+                {%- endif -%}
+                {%- if not loop.last%},{%- endif %}
+            {%- endfor -%})
+            {%- if not loop.last%},{%- endif %}
+        {%- endfor %}
       {% endset %}
 
       {% do adapter.add_query(sql, abridge_sql_log=True) %}
