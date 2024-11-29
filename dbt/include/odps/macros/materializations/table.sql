@@ -1,4 +1,4 @@
-{% materialization table, adapter='odps' %}
+{# {% materialization table, adapter='odps' %}
 
   {%- set existing_relation = load_cached_relation(this) -%}
   {%- set target_relation = this.incorporate(type='table') %}
@@ -64,4 +64,4 @@
   {{ run_hooks(post_hooks, inside_transaction=False) }}
 
   {{ return({'relations': [target_relation]}) }}
-{% endmaterialization %}
+{% endmaterialization %}  #}
