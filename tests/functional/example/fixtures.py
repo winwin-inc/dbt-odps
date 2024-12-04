@@ -19,6 +19,9 @@ my_model_yml = """
 version: 2
 models:
   - name: my_model
+    config:
+      grants:
+        select: ['role_project_guest']
     columns:
       - name: id
         tests:

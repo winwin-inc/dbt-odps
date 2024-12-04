@@ -24,7 +24,7 @@ class TestExample:
     def project_config_update(self):
         return {
             "name": "example",
-            "models": {"+materialized": "view"}
+            "models": {"+materialized": "table" }
         }
 
     # everything that goes in the "seeds" directory
@@ -44,7 +44,7 @@ class TestExample:
 
     # The actual sequence of dbt commands and assertions
     # pytest will take care of all "setup" + "teardown"
-    def test_run_seed_test(self, project):
+    def test_dbt_seed(self, project):
         """
         Seed, then run, then test. We expect one of the tests to fail
         An alternative pattern is to use pytest "xfail" (see below)
@@ -62,3 +62,9 @@ class TestExample:
         result_statuses = sorted(r.status for r in results)
         assert result_statuses == ["fail", "pass"]
     # continues below
+    def test_dbt_run(self, project):
+         
+        # run models
+        results = run_dbt(["run", "--debug"])
+        assert len(results) == 1
+       
