@@ -90,7 +90,7 @@ setup(
     include_package_data=True,
     install_requires=[
         f"dbt-core~={dbt_core_version}",
-        f"pyodps",
+        f"pyodps~=0.12.1",
     ],
      # $ setup.py upload support.
     cmdclass={
