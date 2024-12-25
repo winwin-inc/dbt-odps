@@ -234,12 +234,24 @@ class ODPSAdapter(SQLAdapter):
                 pickle.dump(relations, f)
         return relations
 
+    
+   
     @print_method_call
-    def get_odps_table_by_relation(self, relation: OdpsRelation):
-        return self.get_odps_table_if_exists(
-            relation.identifier,
-            project=relation.database,
-        )
+    def get_odps_table_by_relation(self, relation: OdpsRelation, retry_times=3):
+        # Sometimes the newly created table will be judged as not existing, so add retry to obtain it.
+        for i in range(retry_times):
+            table = self.get_odps_client().get_table(
+                relation.identifier, relation.project, relation.schema
+            )
+            try:
+                table.reload()
+                return table
+            except NoSuchObject:
+                logger.info(f"Table {relation.render()} does not exist, retrying...")
+                time.sleep(10)
+                continue
+        logger.warning(f"Table {relation.render()} does not exist.")
+        return None    
     @print_method_call
     def calculate_freshness_from_metadata(
         self,
