@@ -20,6 +20,10 @@
 
     {%- set source_columns = odps__get_columns_from_query(sql) -%}
     {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
+
+    {%- do log('source_columns: ' ~ source_columns|join(',') ) -%}
+    {%- do log('dest_columns: ' ~ dest_columns|join(',') ) -%}
+
     {% do odps__assert_columns_equals(source_columns, dest_columns) %}
     insert overwrite table {{ target_relation }}
     {{ partition_cols(label="partition") }}
