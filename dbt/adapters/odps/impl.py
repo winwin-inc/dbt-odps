@@ -272,18 +272,6 @@ class ODPSAdapter(SQLAdapter):
         return None, freshness
         
 
-    @print_method_call
-    def get_odps_table_if_exists(self, name, project=None) -> Optional[Table]:
-        kwargs = {
-            "name": name,
-            "project": project,
-        }
-
-        if self.odps.exist_table(**kwargs):
-            return self.odps.get_table(**kwargs)
-
-        return None
-
     # override
     @print_method_call
     def get_columns_in_relation(self, relation: OdpsRelation):
@@ -301,5 +289,10 @@ class ODPSAdapter(SQLAdapter):
         """Get a Relation for own list"""
         # if not self.Relation.get_default_quote_policy().database:
         #     database = None
-
-        return super().get_relation(database, schema, identifier)
+        odpsTable = self.get_odps_client().get_table(identifier, database, schema)
+        try:
+            odpsTable.reload()
+        except NoSuchObject:
+            return None
+        return OdpsRelation.from_odps_table(odpsTable)
+    

@@ -33,7 +33,24 @@ class OdpsRelation(BaseRelation):
             )
         return super().create(database, schema, identifier, type, **kwargs)
  
-   
+    @classmethod
+    def from_odps_table(cls, table: Table):
+        schema = table.get_schema()
+        schema = schema.name if schema else "default"
+
+        table_type = RelationType.Table
+        if table.is_virtual_view:
+            table_type = RelationType.View
+        if table.is_materialized_view:
+            table_type = RelationType.MaterializedView
+
+        return cls.create(
+            database=table.project.name,
+            schema=schema,
+            identifier=table.name,
+            type=table_type,
+        )
+         
     @property
     def project(self):
         return self.database
