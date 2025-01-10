@@ -32,9 +32,9 @@
 
   {#-- Validate early so we don't run SQL if the file_format + strategy combo is invalid --#}
   {%- set raw_file_format = config.get('file_format', default='parquet') -%}
-  {%- set incremental_strategy = config.get('incremental_strategy', default='insert_overwrite') -%}
+  {%- set incremental_strategy = config.get('incremental_strategy', default='append') -%}
   {% if incremental_strategy == None %}
-      {% set incremental_strategy = 'insert_overwrite' %}
+      {% set incremental_strategy = 'append' %}
   {% endif %}
 
   {#-- For non-partition tables insert overwrite is not supported --#}
@@ -77,9 +77,10 @@
     {#-- Get the incremental_strategy, the macro to use for the strategy, and build the sql --#}
     {% if incremental_strategy == 'insert_overwrite' -%}
       {% set build_sql = get_insert_overwrite_sql(temp_relation, target_relation, sql) %}
-    {% else %}
+    {% elif incremental_strategy == 'append' - %}
       {% set build_sql = get_insert_into_sql(temp_relation, target_relation, sql) %}
     {% endif %}  
+
 
   {% endif %}
 

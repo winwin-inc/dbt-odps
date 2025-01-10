@@ -32,17 +32,21 @@
 {% endmacro %}
 
 
-{% macro get_insert_into_sql(source_relation, target_relation, dest_columns) %}
+{% macro get_insert_into_sql(source_relation, target_relation, sql) %}
      {%- set sql_header = config.get('sql_header', none) %}
     {{ sql_header if sql_header is not none }}
 
+    {%- set source_columns = odps__get_columns_from_query(sql) -%}
+    {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
 
-    {%- set dest_cols_csv = dest_columns | map(attribute='quoted') | join(', ') -%}
-    insert into {{ target_relation }} ({{ dest_cols_csv }})
-    (
-        select {{ dest_cols_csv }}
-        from {{ source_relation }}
-    )
+    {%- do log('source_columns: ' ~ source_columns|join(',') ) -%}
+    {%- do log('dest_columns: ' ~ dest_columns|join(',') ) -%}
+
+    {% do odps__assert_columns_equals(source_columns, dest_columns) %}
+    insert into table {{ target_relation }}
+    {{ partition_cols(label="partition") }}
+    {{ sql }}
+
 {% endmacro %}
 
 {% macro get_qualified_columnnames_csv(columns, qualifier='') %}
