@@ -1,0 +1,5 @@
+name: dbt_odps
+version: 1.9.0
+config-version: 2
+
+macro-paths: ["macros"]

@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+dynamic = ["version"]
+name = "dbt-odps-winwin"
+description = "The ODPS(MaxCompute) adapter plugin for dbt"
+readme = "README.md"
+keywords = ["dbt", "adapter", "adapters", "database", "elt", "dbt-core", "dbt Core", "dbt Cloud", "dbt Labs", "odps", "MaxCompute", "aliyun"]
+requires-python = ">=3.9.0"
+authors = [{ name = "Winwin Inc", email = "dev@brandct.com" }]
+maintainers = [{ name = "Winwin Inc", email = "dev@brandct.com" }]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "dbt-common>=1.10,<2.0",
+    "dbt-adapters>=1.7,<2.0",
+    # 3.20 introduced pyarrow>=3.0 under the `pandas` extra
+    # ----
+    # Expect compatibility with all new versions of these packages, so lower bounds only.
+    # add dbt-core to ensure backwards compatibility of installation, this is not a functional dependency
+    "dbt-core>=1.8.0",
+    "pyodps>=0.12.2.2",
+    "pandas>=2.2.3",
+    "pytest-dotenv>=0.5.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit", "tests/functional"]
+addopts = "-v --color=yes -s"
+env_files = ["test.env"]
+filterwarnings = [
+    "ignore:.*'soft_unicode' has been renamed to 'soft_str'*:DeprecationWarning",
+    "ignore:unclosed file .*:ResourceWarning",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-dotenv>=0.5.2",
+]

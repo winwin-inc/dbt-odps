@@ -1,0 +1,6 @@
+[version]
+path = "src/dbt/adapters/odps/__version__.py"
+
+[build.targets.wheel]
+packages = ["src/dbt"]
+sources = ["src"]

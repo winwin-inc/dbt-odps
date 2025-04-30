@@ -1,0 +1,22 @@
+fixed:
+  type: odps
+  priority: interactive
+  job_retries: 1
+prompts:
+  endpoint:
+    hint: "The endpoint of odps instance, know more https://help.aliyun.com/document_detail/34951.html"
+  database:
+    hint: "The database name of your odps instance, aka project name."
+  schema:
+    hint: "The schema name of your odps instance, if you don't have it, typing default."
+  access_id:
+    hint: "The access id of your account."
+  secret_access_key:
+    hint: "The secret access key of your account."
+    hide_input: true
+  priority:
+    hint: "The priority of odps task"
+    hide_input: true
+  hints:
+    hint: "The hints of odps task"
+    hide_input: true

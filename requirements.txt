@@ -1,3 +1,0 @@
-agate~=1.7.0
-setuptools~=68.0.0
-pyodps
