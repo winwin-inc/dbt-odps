@@ -305,21 +305,21 @@ class ODPSAdapter(SQLAdapter):
         )
         return schema_exist
 
-    def _get_one_catalog(
-        self,
-        information_schema: InformationSchema,
-        schemas: Set[str],
-        used_schemas: FrozenSet[Tuple[str, str]],
-    ) -> "agate.Table":
-        relations = []
-        for schema in schemas:
-            results = self.get_odps_client().list_tables(schema=schema)
-            for odps_table in results:
-                relation = ODPSRelation.from_odps_table(odps_table)
-                relations.append(relation)
-        return self._get_one_catalog_by_relations(
-            information_schema, relations, used_schemas
-        )
+    # def _get_one_catalog(
+    #     self,
+    #     information_schema: InformationSchema,
+    #     schemas: Set[str],
+    #     used_schemas: FrozenSet[Tuple[str, str]],
+    # ) -> "agate.Table":
+    #     relations = []
+    #     for schema in schemas:
+    #         results = self.get_odps_client().list_tables(schema=schema)
+    #         for odps_table in results:
+    #             relation = ODPSRelation.from_odps_table(odps_table)
+    #             relations.append(relation)
+    #     return self._get_one_catalog_by_relations(
+    #         information_schema, relations, used_schemas
+    #     )
 
     def _get_one_catalog_by_relations(
         self,

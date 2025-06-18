@@ -12,7 +12,7 @@ Self = TypeVar("Self", bound="ODPSRelation")
 
 @dataclass(frozen=True, eq=False, repr=False)
 class ODPSRelation(BaseRelation):
-    quote_character: str = "`"
+    quote_character: str = ""
     # subquery alias name is not required in MaxCompute
     require_alias: bool = False
 
@@ -80,7 +80,7 @@ class ODPSRelation(BaseRelation):
 
 @dataclass(frozen=True, eq=False, repr=False)
 class ODPSInformationSchema(InformationSchema):
-    quote_character: str = "`"
+    quote_character: str = ""
 
     @classmethod
     def get_path(
