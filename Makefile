@@ -1,4 +1,4 @@
-VERSION = 1.9.1-alpha.4
+VERSION = 1.9.1-alpha.6
 
 tag:
 	echo "version = '$(VERSION)'" > src/dbt/adapters/odps/__version__.py
@@ -17,3 +17,4 @@ publish:
  
 	
 all: tag build publish
+

@@ -54,7 +54,7 @@ class PartitionConfig(dbtClassMixin):
                         if field_key not in new_dict:
                             new_dict[key + "s"] = []
                         if key in item:
-                            new_dict[field_key].append(item[key].strip())
+                            new_dict[field_key].append(item[key].strip() if item[key] else "")
                         else:
                             new_dict[field_key].append("")
             else:
