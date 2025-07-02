@@ -24,8 +24,6 @@ class ODPSConnectionManager(SQLConnectionManager):
 
         credentials = connection.credentials
         o = credentials.odps()
-        # always use UTC timezone
-        options.local_timezone = False
         options.user_agent_pattern = "dbt-odps $pyodps_version $python_version"
         hints = GLOBAL_SQL_HINTS.copy()
         if credentials.hints:

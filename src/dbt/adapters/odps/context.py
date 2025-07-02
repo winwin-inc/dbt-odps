@@ -9,6 +9,7 @@ GLOBAL_SQL_HINTS = {
     "odps.sql.select.output.format": "csv",
     "odps.sql.submit.mode": "script",
     "odps.sql.allow.cartesian": "true",
+    "odps.sql.timezone": "Asia/Shanghai",
     "odps.sql.allow.schema.evolution": "true",
     "odps.sql.python.version": "cp37"
 }

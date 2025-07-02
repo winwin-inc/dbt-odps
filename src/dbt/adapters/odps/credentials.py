@@ -4,7 +4,6 @@ from typing import Dict, Optional
 from dbt.adapters.contracts.connection import Credentials
 from odps import ODPS
 
-
 @dataclass
 class ODPSCredentials(Credentials):
     endpoint: str
@@ -40,4 +39,6 @@ class ODPSCredentials(Credentials):
             project=self.database,
             schema=self.schema,
         )
+        
+            
         return o
