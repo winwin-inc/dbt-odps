@@ -25,6 +25,11 @@ class ODPSConnectionManager(SQLConnectionManager):
         credentials = connection.credentials
         o = credentials.odps()
         options.user_agent_pattern = "dbt-odps $pyodps_version $python_version"
+        options.verbose = True
+        options.verbose_log = logger.debug
+        options.progress_time_interval = 300
+        
+        
         hints = GLOBAL_SQL_HINTS.copy()
         if credentials.hints:
             hints.update(credentials.hints)
