@@ -130,6 +130,7 @@ class ODPSAdapter(SQLAdapter):
     def get_relation(
         self, database: str, schema: str, identifier: str
     ) -> Optional[ODPSRelation]:
+        print('ODPSAdapter:',[identifier, database, schema])
         odpsTable = self.get_odps_client().get_table(identifier, database, schema)
         try:
             odpsTable.reload()

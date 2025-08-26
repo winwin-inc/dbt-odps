@@ -1,4 +1,6 @@
-VERSION = 1.9.1-alpha.9
+VERSION = 1.9.2rc1
+
+all: tag build publish
 
 tag:
 	echo "version = '$(VERSION)'" > src/dbt/adapters/odps/__version__.py
@@ -16,5 +18,5 @@ publish:
 	twine upload dist/*
  
 	
-all: tag build publish
+
 

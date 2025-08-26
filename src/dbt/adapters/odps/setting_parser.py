@@ -75,9 +75,7 @@ class SettingParser:
                 if i < s_length:
                     current_state = State.IN_KEY_VALUE
                 else:
-                    errors.append(
-                        "Invalid SET statement: missing key-value after 'set'"
-                    )
+                    errors.append("Invalid SET statement: missing key-value after 'set'")
                     current_start_index = -1
                     current_state = State.DEFAULT
 
@@ -111,13 +109,9 @@ class SettingParser:
         if current_pos < s_length:
             remaining.append(s[current_pos:])
 
-        return ParseResult(
-            settings=settings, remaining_query="".join(remaining), errors=errors
-        )
+        return ParseResult(settings=settings, remaining_query="".join(remaining), errors=errors)
 
-    def _parse_key_value(
-        self, kv: str, settings: Dict[str, str], errors: List[str]
-    ) -> bool:
+    def _parse_key_value(self, kv: str, settings: Dict[str, str], errors: List[str]) -> bool:
         eq_idx = kv.find("=")
         if eq_idx == -1:
             errors.append(f"Invalid key-value pair '{kv}': missing '='")
