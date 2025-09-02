@@ -40,8 +40,14 @@ class CursorWrapper(Cursor):
         retry_times = 10
         for i in range(retry_times):
             try:
+                logger.debug(f"ODPS instance logview: {self._instance.get_logview_address()}")
                 super().execute(result.remaining_query, hints=result.settings)
                 self._instance.wait_for_success()
+                 # print task summary
+                task_detail = self._instance.get_task_detail()
+                task_summary = task_detail.get("Instance", {}).get("Summary", "")
+                if task_summary:
+                    logger.debug(task_summary)
                 return
             except ODPSError as e:
                 # 0130201: view not found, 0110061, 0130131: table not found
