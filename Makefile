@@ -1,4 +1,4 @@
-VERSION = 1.9.2rc2
+VERSION = 1.9.2rc3
 # 默认目标
 .DEFAULT_GOAL := all
 
