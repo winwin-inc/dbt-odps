@@ -40,7 +40,7 @@ class CursorWrapper(Cursor):
         retry_times = 10
         for i in range(retry_times):
             try:
-                super().execute(result.remaining_query, hints=result.settings)
+                super().execute(result.remaining_query, hints=result.settings,async_=True)
                 logger.debug(f"ODPS instance logview: {self.instance.get_logview_address()}")
                 self.instance.wait_for_success()
                  # print task summary
