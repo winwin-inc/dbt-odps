@@ -11,7 +11,9 @@ from .context import GLOBAL_SQL_HINTS
 from .wrapper import ConnectionWrapper
 
 logger = AdapterLogger("ODPS")
-
+ 
+ 
+ 
 
 class ODPSConnectionManager(SQLConnectionManager):
     TYPE = "odps"
@@ -24,6 +26,7 @@ class ODPSConnectionManager(SQLConnectionManager):
 
         credentials = connection.credentials
         o = credentials.odps()
+        options.priority = credentials.priority or 9
         options.user_agent_pattern = "dbt-odps $pyodps_version $python_version"
         
         

@@ -3,26 +3,17 @@ import re
 import time
 
 from dbt.adapters.events.logging import AdapterLogger
-from odps.compat import six
 from odps.dbapi import Connection, Cursor
 from odps.errors import ODPSError
-from odps.utils import to_str
 
-from .credentials import ODPSCredentials
 from .setting_parser import SettingParser
 
 
 class ConnectionWrapper(Connection):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._credentials = kwargs.get("credentials", None)
-
     def cursor(self, *args, **kwargs):
         return CursorWrapper(
             self,
             *args,
-            hints=copy.deepcopy(self._hints),
-            credentials=self._credentials,
             **kwargs,
         )
 
