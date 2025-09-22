@@ -501,10 +501,28 @@ class ODPSAdapter(SQLAdapter):
             dtype=np.dtype(object),
         )
         logger.debug(f"Load csv to table {database}.{schema}.{table_name}")
+
+         # Get table schema to ensure proper type conversion
+        odps_client = self.get_odps_client()
+        
+        try:
+            # Get existing table schema
+            table = odps_client.get_table(table_name, project=database, schema=schema)
+            table_schema = table.table_schema
+            
+            # Convert DataFrame columns to match ODPS schema
+            pd_dataframe = self._convert_dataframe_to_odps_types(pd_dataframe, table_schema, column_override)
+            
+        except ODPSError as e:
+            logger.warning(f"Could not get table schema for {database}.{schema}.{table_name}: {e}")
+            # If table doesn't exist, try basic type inference
+            pd_dataframe = self._infer_and_convert_types(pd_dataframe, column_override)
+        
+        
         # make sure target table exist
         for i in range(10):
             try:
-                self.get_odps_client().write_table(
+                odps_client.write_table(
                     table_name,
                     pd_dataframe,
                     project=database,
@@ -519,7 +537,122 @@ class ODPSAdapter(SQLAdapter):
                 )
                 time.sleep(10)
                 continue
-
+            except Exception as e:
+                if "Could not convert" in str(e) or "ArrowInvalid" in str(e):
+                    logger.error(f"Type conversion error: {e}")
+                    logger.error("DataFrame dtypes:")
+                    for col, dtype in pd_dataframe.dtypes.items():
+                        logger.error(f"  {col}: {dtype}")
+                    
+                    # Try with string conversion as fallback
+                    logger.info("Attempting to convert problematic columns to strings...")
+                    pd_dataframe = self._fallback_string_conversion(pd_dataframe)
+                    
+                    # Retry once with string conversion
+                    try:
+                        odps_client.write_table(
+                            table_name,
+                            pd_dataframe,
+                            project=database,
+                            schema=schema,
+                            create_table=False,
+                            create_partition=False,
+                        )
+                        logger.warning(f"Successfully loaded data to {database}.{schema}.{table_name} with string fallback")
+                        break
+                    except Exception as retry_e:
+                        logger.error(f"Even string fallback failed: {retry_e}")
+                        raise
+                else:
+                    logger.error(f"Unexpected error writing to table: {e}")
+                    raise
+    
+    
+    def _convert_dataframe_to_odps_types(self, df: pd.DataFrame, table_schema, column_override: Dict[str, str]) -> pd.DataFrame:
+        """Convert DataFrame columns to match ODPS table schema types."""
+        df_copy = df.copy()
+        
+        for column in table_schema.columns:
+            col_name = column.name
+            col_type = str(column.type).lower()
+            
+            if col_name not in df_copy.columns:
+                continue
+                
+            # Handle column overrides first
+            if col_name in column_override:
+                override_type = column_override[col_name].lower()
+                if override_type == "timestamp":
+                    continue  # Already handled in parse_dates
+                    
+            try:
+                if col_type in ['bigint', 'int64', 'integer']:
+                    # Convert to numeric, handling non-numeric values
+                    df_copy[col_name] = pd.to_numeric(df_copy[col_name], errors='coerce')
+                    df_copy[col_name] = df_copy[col_name].astype('Int64')  # Nullable integer
+                    
+                elif col_type in ['double', 'float64', 'float']:
+                    df_copy[col_name] = pd.to_numeric(df_copy[col_name], errors='coerce')
+                    df_copy[col_name] = df_copy[col_name].astype('float64')
+                    
+                elif col_type in ['string', 'varchar']:
+                    df_copy[col_name] = df_copy[col_name].astype('string')
+                    
+                elif col_type in ['boolean', 'bool']:
+                    # Handle various boolean representations
+                    df_copy[col_name] = df_copy[col_name].map({
+                        'true': True, 'True': True, 'TRUE': True, '1': True, 1: True,
+                        'false': False, 'False': False, 'FALSE': False, '0': False, 0: False,
+                        True: True, False: False
+                    })
+                    df_copy[col_name] = df_copy[col_name].astype('boolean')
+                    
+            except Exception as e:
+                logger.warning(f"Could not convert column {col_name} to {col_type}: {e}")
+                # Keep as string if conversion fails
+                df_copy[col_name] = df_copy[col_name].astype('string')
+                
+        return df_copy
+    
+    def _infer_and_convert_types(self, df: pd.DataFrame, column_override: Dict[str, str]) -> pd.DataFrame:
+        """Basic type inference when table schema is not available."""
+        df_copy = df.copy()
+        
+        for col_name in df_copy.columns:
+            if col_name in column_override:
+                continue  # Skip columns with explicit overrides
+                
+            try:
+                # Try to infer numeric types
+                if df_copy[col_name].dtype == 'object':
+                    # Try integer first
+                    numeric_series = pd.to_numeric(df_copy[col_name], errors='coerce')
+                    if not numeric_series.isna().all():
+                        if numeric_series.equals(numeric_series.astype('Int64', errors='ignore')):
+                            df_copy[col_name] = numeric_series.astype('Int64')
+                        else:
+                            df_copy[col_name] = numeric_series.astype('float64')
+                    else:
+                        df_copy[col_name] = df_copy[col_name].astype('string')
+                        
+            except Exception as e:
+                logger.warning(f"Type inference failed for column {col_name}: {e}")
+                df_copy[col_name] = df_copy[col_name].astype('string')
+                
+        return df_copy
+    
+    def _fallback_string_conversion(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Convert all problematic columns to strings as a last resort."""
+        df_copy = df.copy()
+        
+        for col_name in df_copy.columns:
+            if df_copy[col_name].dtype == 'object':
+                try:
+                    df_copy[col_name] = df_copy[col_name].astype('string')
+                except Exception:
+                    df_copy[col_name] = df_copy[col_name].fillna('').astype('string')
+                    
+        return df_copy                
     ###
     # Methods about grants
     ###
