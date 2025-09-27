@@ -14,7 +14,11 @@ class ConnectionWrapper(Connection):
         return CursorWrapper(
             self,
             *args,
-            **kwargs,
+            sqa_type=self._sqa_type,
+            fallback_policy=self._fallback_policy,
+            hints=self._hints,
+            quota_name=self._quota_name,
+            **kwargs
         )
 
     def cancel(self):
