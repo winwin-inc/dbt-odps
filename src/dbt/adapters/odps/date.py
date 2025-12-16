@@ -1,10 +1,11 @@
-import re
+# -*- coding: utf-8 -*-
+
 from datetime import timedelta, datetime, timezone
-from dateutil.relativedelta import relativedelta
 import pytz
+from dateutil.relativedelta import relativedelta
 
 LOCAL_TIMEZONE = pytz.timezone("Asia/Shanghai")
-MAX_DATE = "9999-12-31"
+MAX_DATE = '9999-12-31'
 
 
 class LocalDate(object):
@@ -33,14 +34,11 @@ class LocalDate(object):
     def get_utc(self):
         return self.date.astimezone(timezone.utc)
 
-    def fmt(self, fmt="%Y%m%d"):
-        return self.date.strftime(fmt)
-
-    def format(self, fmt="%Y%m%d"):
-        return self.date.strftime(fmt)
+    def fmt(self, format="%Y%m%d"):
+        return self.date.strftime(format)
 
     def to_date_string(self):
-        return self.format("%Y-%m-%d")
+        return self.fmt('%Y-%m-%d')
 
     @staticmethod
     def today():
@@ -51,13 +49,13 @@ class LocalDate(object):
         return LocalDate(datetime.now() - timedelta(days=1))
 
     def __eq__(self, other):
-        return self.format() == other.format()
+        return self.fmt() == other.fmt()
 
     def __str__(self):
-        return self.format()
-
+        return self.fmt()
+    
     def __hash__(self):
-        return hash(self.format())
+        return hash(self.fmt())
 
     def add_days(self, days=1):
         return LocalDate(self.date + timedelta(days=days))
@@ -72,19 +70,16 @@ class LocalDate(object):
         return self.add_months(-1 * months)
 
     def add_weeks(self, weeks=1):
-        return LocalDate(self.date + timedelta(days=7 * weeks))
+        return LocalDate(self.date + timedelta(days=7*weeks))
 
     def sub_weeks(self, weeks=1):
-        return LocalDate(self.date + timedelta(days=-7 * weeks))
+        return LocalDate(self.date + timedelta(days=-7*weeks))
 
     def start_of_month(self):
         return LocalDate(self.date.replace(day=1))
 
     def end_of_month(self):
-        return LocalDate(
-            (self.date.replace(day=28) + timedelta(days=4)).replace(day=1)
-            - timedelta(days=1)
-        )
+        return LocalDate((self.date.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1))
 
     def is_end_of_month(self):
         return self.date.day == self.end_of_month().day()
@@ -93,25 +88,13 @@ class LocalDate(object):
         return LocalDate(self.date - timedelta(days=self.date.weekday()))
 
     def end_of_week(self):
-        return LocalDate(self.date + timedelta(days=6 - self.date.weekday()))
+        return LocalDate(self.date + timedelta(days=6-self.date.weekday()))
 
     def start_of_quarter(self):
-        return LocalDate(
-            self.date.replace(month=(self.month() + 2) // 3 * 3 - 2, day=1)
-        )
-
+        return  LocalDate(self.date.replace(month= (self.month() + 2) // 3 * 3 - 2 , day=1 ))
+    
     def end_of_quarter(self):
-        return LocalDate(self.date.replace(month=(self.month() + 2) // 3 * 3, day=1))
-
-
-def parse_date(datestr: str) -> LocalDate:
-    if re.match(r"^\d{4}-\d{2}-\d{2}$", datestr):
-        return LocalDate(datetime.strptime(datestr, "%Y-%m-%d"))
-    elif re.match(r"^\d{8}$", datestr):
-        return LocalDate(datetime.strptime(datestr, "%Y%m%d"))
-    else:  # iso date
-        return LocalDate(datetime.fromisoformat(datestr))
-
+        return  LocalDate(self.date.replace(month= (self.month() + 2) // 3 * 3 , day = 1))
 
 def local(date) -> LocalDate:
     """
@@ -131,7 +114,7 @@ def yesterday() -> LocalDate:
 
 
 def fmt(date, fmt="%Y%m%d"):
-    return LocalDate(date).format(fmt)
+    return LocalDate(date).fmt(format=fmt)
 
 
 def days_ago(n, hour=0, minute=0, second=0, microsecond=0):
@@ -150,6 +133,8 @@ def days_ago(n, hour=0, minute=0, second=0, microsecond=0):
     :param second:
     """
     today = datetime.now().replace(
-        hour=hour, minute=minute, second=second, microsecond=microsecond
-    )
+        hour=hour,
+        minute=minute,
+        second=second,
+        microsecond=microsecond)
     return today - timedelta(days=n)
