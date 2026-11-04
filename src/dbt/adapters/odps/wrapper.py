@@ -41,7 +41,7 @@ class CursorWrapper(Cursor):
                 )
 
                 logger.debug(
-                    f"ODPS Instance ID: {instance.id},Log view: {instance.get_logview_address()}"
+                    f"ODPS Instance ID: {self.instance.id},Log view: {self.instance.get_logview_address()}"
                 )
 
                 self.instance.wait_for_success()
