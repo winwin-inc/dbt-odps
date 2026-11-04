@@ -3,6 +3,7 @@ import re
 import time
 
 from dbt.adapters.events.logging import AdapterLogger
+
 from odps.dbapi import Connection, Cursor
 from odps.errors import ODPSError
 
@@ -18,7 +19,7 @@ class ConnectionWrapper(Connection):
             fallback_policy=self._fallback_policy,
             hints=self._hints,
             quota_name=self._quota_name,
-            **kwargs
+            **kwargs,
         )
 
     def cancel(self):
@@ -35,10 +36,16 @@ class CursorWrapper(Cursor):
         retry_times = 10
         for i in range(retry_times):
             try:
-                super().execute(result.remaining_query, hints=result.settings,async_=True)
-                logger.debug(f"ODPS instance logview: {self.instance.get_logview_address()}")
+                super().execute(
+                    result.remaining_query, hints=result.settings, async_=True
+                )
+
+                logger.debug(
+                    f"ODPS Instance ID: {instance.id},Log view: {instance.get_logview_address()}"
+                )
+
                 self.instance.wait_for_success()
-                 # print task summary
+                # print task summary
                 task_detail = self.instance.get_task_detail()
                 task_summary = task_detail.get("Instance", {}).get("Summary", "")
                 if task_summary:
