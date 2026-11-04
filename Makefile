@@ -1,4 +1,4 @@
-VERSION = 1.9.2rc1
+VERSION = 1.9.2rc11
 # 默认目标
 .DEFAULT_GOAL := all
 
@@ -6,7 +6,7 @@ all: tag build publish
 
 tag:
 	@echo "version = '$(VERSION)'" > src/dbt/adapters/odps/__version__.py
-	@git add -u  
+	@git add -u
 	@git commit -m "tag: v$(VERSION)"
 	@git tag v$(VERSION)
 	@git push --tags
@@ -17,7 +17,7 @@ build:
 	@hatch build
 	@echo "✅ Build completed"
 
-publish:	
+publish:
 	@twine upload dist/*
 	@echo "✅ Published to PyPI"
 
