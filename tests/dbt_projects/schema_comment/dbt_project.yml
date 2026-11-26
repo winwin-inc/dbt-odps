@@ -1,0 +1,18 @@
+name: 'dbt_odps_schema_comment'
+version: '1.0.0'
+config-version: 2
+profile: 'dbt_odps_schema_comment'
+
+model-paths: ["models"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  dbt_odps_schema_comment:
+    +materialized: table
+    # custom/ 下的模型通过 +schema 落在自定义 schema，而不是 profile 的 target schema，
+    # 用于验证注入到 query comment 里的是 node 的 schema，而不是连接默认 schema。
+    # dbt 默认的 generate_schema_name 会把它生成为 <target schema>_<自定义值>，
+    # 例如 target schema 为 default 时就是 default_dbt_schema_comment_custom。
+    custom:
+      +schema: "{{ env_var('ODPS_TEST_CUSTOM_SCHEMA', 'dbt_schema_comment_custom') }}"

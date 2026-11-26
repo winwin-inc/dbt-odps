@@ -1,0 +1,13 @@
+# 凭据全部来自环境变量（见仓库根目录的 test.env），本文件不含任何密钥。
+dbt_odps_schema_comment:
+  target: dev
+  outputs:
+    dev:
+      type: odps
+      threads: 4
+      access_id: "{{ env_var('ODPS_ACCESS_ID') }}"
+      secret_access_key: "{{ env_var('ODPS_ACCESS_KEY') }}"
+      database: "{{ env_var('ODPS_PROJECT') }}"
+      endpoint: "{{ env_var('ODPS_ENDPOINT') }}"
+      schema: "{{ env_var('ODPS_SCHEMA', 'default') }}"
+      priority: 4
