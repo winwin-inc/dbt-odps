@@ -382,16 +382,19 @@ def cleanup(odps, preexisting_schemas: set[str]) -> None:
     project = os.environ["ODPS_PROJECT"]
     models = manifest_models() if MANIFEST.exists() else {}
     for node in models.values():
+        # 视图必须用 delete_view：delete_table 对视图不生效，不报错但也没删掉
+        is_view = node.get("config", {}).get("materialized") == "view"
+        drop = odps.delete_view if is_view else odps.delete_table
         try:
-            odps.delete_table(
+            drop(
                 node["alias"],
                 project=node["database"],
                 schema=node["schema"],
                 if_exists=True,
             )
-            print(f"已删除表 {node['database']}.{node['schema']}.{node['alias']}")
+            print(f"已删除{'视图' if is_view else '表'} {node['database']}.{node['schema']}.{node['alias']}")
         except Exception as e:
-            print(f"删除表 {node['alias']} 失败: {e}")
+            print(f"删除 {node['alias']} 失败: {e}")
     used = {node["schema"] for node in models.values()}
     for schema in sorted(used - {target_schema()} - preexisting_schemas):
         try:
