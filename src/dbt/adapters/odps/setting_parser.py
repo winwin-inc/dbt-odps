@@ -1,5 +1,13 @@
+import json
+import re
 from enum import Enum
-from typing import Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple, Optional
+
+from dbt.adapters.events.logging import AdapterLogger
+
+from odps.dbapi import Connection
+
+logger = AdapterLogger("ODPS")
 
 
 class State(Enum):
@@ -17,11 +25,73 @@ class ParseResult(NamedTuple):
     errors: List[str]
 
 
+_LEADING_COMMENT_RE = re.compile(r"^\s*/\*\s*(.*?)\s*\*/", re.DOTALL)
+
+
 class SettingParser:
     @staticmethod
-    def parse(query: str) -> ParseResult:
+    def parse(query: str, connection: Optional[Connection] = None) -> ParseResult:
+        """Parse SET statements from query and inject schema into the leading JSON comment.
+
+        Args:
+            query: The SQL operation string.
+            connection: ODPS connection, used to look up the current schema name.
+                When provided, the schema is injected into the leading /* {json} */
+                comment (dbt query comment) so that lineage collectors can resolve
+                the schema of the executed table. When omitted, the query is
+                returned unchanged.
+        """
+        if connection:
+            query = SettingParser._inject_schema(query, connection)
         parser = SettingParser()
         return parser.extract_set_statements(query)
+
+    @staticmethod
+    def _resolve_schema_name(connection: Connection) -> Optional[str]:
+        """获取连接当前默认 schema 名。
+
+        schema 注入只是给血缘采集用的附加信息，取不到时降级为「不注入」，
+        不能因为一次元数据请求失败就让整条 SQL 执行失败。
+        """
+        try:
+            schema = connection.odps.get_schema()
+        except Exception as e:
+            logger.warning(f"Failed to resolve current schema, skip injecting: {e}")
+            return None
+        if schema is None:
+            return None
+        return getattr(schema, "name", None)
+
+    @staticmethod
+    def _inject_schema(operation: str, connection: Connection) -> str:
+        """Inject schema information into the leading /* {json} */ comment if present.
+
+        Transforms:
+            /* {"app": "dbt", ...} */
+            ALTER VIEW ...
+
+        Into:
+            /* {"app": "dbt", ..., "schema": ""} */
+            ALTER VIEW ...
+        """
+        m = _LEADING_COMMENT_RE.match(operation)
+        if not m:
+            return operation
+
+        json_str = m.group(1).strip()
+        try:
+            comment_data = json.loads(json_str)
+        except json.JSONDecodeError:
+            return operation
+        schema_name = SettingParser._resolve_schema_name(connection)
+        if schema_name:
+            comment_data["schema"] = schema_name
+        new_json = json.dumps(comment_data, separators=(",", ":"))
+        leading = m.group(0)
+        prefix_len = len(leading) - len(leading.lstrip())
+        prefix = leading[:prefix_len]
+        new_comment = prefix + "/* " + new_json + " */"
+        return operation.replace(m.group(0), new_comment, 1)
 
     def extract_set_statements(self, s: str) -> ParseResult:
         settings: dict[str, str] = {}

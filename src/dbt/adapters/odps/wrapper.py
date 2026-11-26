@@ -1,5 +1,3 @@
-import copy
-import re
 import time
 
 from dbt.adapters.events.logging import AdapterLogger
@@ -31,11 +29,11 @@ logger = AdapterLogger("ODPS")
 
 class CursorWrapper(Cursor):
     def execute(self, operation, parameters=None, **kwargs):
-        # retry ten times, each time wait for 15 seconds
-        result = SettingParser.parse(operation)
         retry_times = 10
         for i in range(retry_times):
             try:
+                # 剥离 SET 语句（转成 hints），并把当前 schema 注入到 dbt 前置 JSON 注释中
+                result = SettingParser.parse(operation, connection=self._connection)
                 super().execute(
                     result.remaining_query, hints=result.settings, async_=True
                 )
