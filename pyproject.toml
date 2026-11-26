@@ -36,7 +36,7 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/unit", "tests/functional"]
+testpaths = ["tests/unit_test", "tests/functional"]
 addopts = "-v --color=yes -s"
 env_files = ["test.env"]
 filterwarnings = [
