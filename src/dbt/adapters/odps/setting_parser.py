@@ -30,19 +30,29 @@ _LEADING_COMMENT_RE = re.compile(r"^\s*/\*\s*(.*?)\s*\*/", re.DOTALL)
 
 class SettingParser:
     @staticmethod
-    def parse(query: str, connection: Optional[Connection] = None) -> ParseResult:
+    def parse(
+        query: str,
+        connection: Optional[Connection] = None,
+        schema: Optional[str] = None,
+    ) -> ParseResult:
         """Parse SET statements from query and inject schema into the leading JSON comment.
 
         Args:
             query: The SQL operation string.
-            connection: ODPS connection, used to look up the current schema name.
-                When provided, the schema is injected into the leading /* {json} */
-                comment (dbt query comment) so that lineage collectors can resolve
-                the schema of the executed table. When omitted, the query is
+            connection: ODPS connection, used to look up the current schema name
+                when schema is not given explicitly.
+            schema: Schema name to inject into the leading /* {json} */ comment
+                (dbt query comment), so that lineage collectors can resolve the
+                schema of the executed table. It is normally the schema of the
+                dbt node being executed, which differs from the connection
+                default schema when a model overrides it via `+schema:`.
+                When neither schema nor connection is given, the query is
                 returned unchanged.
         """
-        if connection:
-            query = SettingParser._inject_schema(query, connection)
+        if connection is not None or schema is not None:
+            if schema is None:
+                schema = SettingParser._resolve_schema_name(connection)
+            query = SettingParser._inject_schema(query, schema)
         parser = SettingParser()
         return parser.extract_set_statements(query)
 
@@ -63,7 +73,7 @@ class SettingParser:
         return getattr(schema, "name", None)
 
     @staticmethod
-    def _inject_schema(operation: str, connection: Connection) -> str:
+    def _inject_schema(operation: str, schema_name: Optional[str]) -> str:
         """Inject schema information into the leading /* {json} */ comment if present.
 
         Transforms:
@@ -83,7 +93,6 @@ class SettingParser:
             comment_data = json.loads(json_str)
         except json.JSONDecodeError:
             return operation
-        schema_name = SettingParser._resolve_schema_name(connection)
         if schema_name:
             comment_data["schema"] = schema_name
         new_json = json.dumps(comment_data, separators=(",", ":"))

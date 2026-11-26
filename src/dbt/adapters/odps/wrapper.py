@@ -5,6 +5,7 @@ from dbt.adapters.events.logging import AdapterLogger
 from odps.dbapi import Connection, Cursor
 from odps.errors import ODPSError
 
+from .context import get_current_node_schema
 from .setting_parser import SettingParser
 
 
@@ -33,7 +34,11 @@ class CursorWrapper(Cursor):
         for i in range(retry_times):
             try:
                 # 剥离 SET 语句（转成 hints），并把当前 schema 注入到 dbt 前置 JSON 注释中
-                result = SettingParser.parse(operation, connection=self._connection)
+                result = SettingParser.parse(
+                    operation,
+                    connection=self._connection,
+                    schema=get_current_node_schema(),
+                )
                 super().execute(
                     result.remaining_query, hints=result.settings, async_=True
                 )

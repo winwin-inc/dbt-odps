@@ -3,12 +3,13 @@ import pickle
 import re
 import tempfile
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
 from multiprocessing.context import SpawnContext
 from pathlib import Path
-from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import Any, Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
 
 import agate
 import numpy as np
@@ -39,6 +40,7 @@ from odps.errors import NoSuchObject, ODPSError
 
 from .column import ODPSColumn
 from .connections import ODPSConnectionManager
+from .context import set_current_node_schema, get_current_node_schema
 from .relation import ODPSRelation
 from .relation_configs import PartitionConfig
 from .utils import is_schema_not_found, quote_ref, quote_string
@@ -91,6 +93,32 @@ class ODPSAdapter(SQLAdapter):
     def __init__(self, config, mp_context: SpawnContext) -> None:
         super().__init__(config, mp_context)
         self.connections: ODPSConnectionManager = self.connections
+
+    @contextmanager
+    def connection_named(
+        self,
+        name: str,
+        query_header_context: Any = None,
+        should_release_connection: bool = True,
+    ) -> Iterator[None]:
+        """在进入 node 上下文时记录该 node 的 schema。
+
+        dbt 执行每个 node 时会调用本方法，并把 node 作为第二个参数传入。
+        模型用 `+schema:` 指定自定义 schema 时，node.schema 与连接默认 schema
+        不同，而 query comment 里需要的是前者——血缘采集据此定位表所属 schema。
+
+        不在 node 上下文中时（如 on-run-start / on-run-end hook）schema 为 None，
+        由 SettingParser 回退到连接默认 schema。
+        """
+        previous_schema = get_current_node_schema()
+        set_current_node_schema(getattr(query_header_context, "schema", None))
+        try:
+            with super().connection_named(
+                name, query_header_context, should_release_connection
+            ):
+                yield
+        finally:
+            set_current_node_schema(previous_schema)
 
     def get_odps_client(self) -> ODPS:
         conn = self.acquire_connection()
