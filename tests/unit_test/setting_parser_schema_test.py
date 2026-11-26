@@ -102,6 +102,25 @@ SELECT 1;"""
         self.assertNotIn("schema", result.remaining_query)
         self.assertIn("SELECT 1;", result.remaining_query)
 
+    def test_explicit_schema_overrides_connection_default(self):
+        """显式传入的 schema（dbt node 的 schema）优先于连接默认 schema。"""
+        conn = self._mock_schema("connection_schema")
+        op = '/* {"app": "dbt"} */\nSELECT 1;'
+        result = SettingParser.parse(op, connection=conn, schema="node_schema")
+        json_part = result.remaining_query.split("*/", 1)[0].lstrip("/*").strip()
+        data = json.loads(json_part)
+        self.assertEqual(data["schema"], "node_schema")
+        # 已知 node schema 时不需要再向 MaxCompute 查询，省掉一次元数据请求
+        conn.odps.get_schema.assert_not_called()
+
+    def test_explicit_schema_without_connection(self):
+        """没有 connection 时，显式传入的 schema 依然会被注入。"""
+        op = '/* {"app": "dbt"} */\nSELECT 1;'
+        result = SettingParser.parse(op, schema="node_schema")
+        json_part = result.remaining_query.split("*/", 1)[0].lstrip("/*").strip()
+        data = json.loads(json_part)
+        self.assertEqual(data["schema"], "node_schema")
+
     def test_schema_key_overwritten(self):
         """If schema key already exists in JSON, it is replaced."""
         conn = self._mock_schema("new_schema")
