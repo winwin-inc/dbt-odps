@@ -10,13 +10,21 @@ from .setting_parser import SettingParser
 
 
 class ConnectionWrapper(Connection):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # pyodps 0.12.5 之前的 Connection 不保存 quota_name，这里补齐
+        if not hasattr(self, "_quota_name"):
+            self._quota_name = kwargs.get("quota_name")
+
     def cursor(self, *args, **kwargs):
         return CursorWrapper(
             self,
             *args,
             sqa_type=self._sqa_type,
             fallback_policy=self._fallback_policy,
-            hints=self._hints,
+            # 复制一份：pyodps 0.12.5 之前的 Cursor.execute 会直接 update 传进来的
+            # dict，不复制的话单条 SQL 的 hints 会泄漏到同一连接的后续 SQL
+            hints=dict(self._hints) if self._hints is not None else None,
             quota_name=self._quota_name,
             **kwargs,
         )
@@ -29,6 +37,21 @@ logger = AdapterLogger("ODPS")
 
 
 class CursorWrapper(Cursor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # pyodps 0.12.5 之前的 Cursor 不保存 quota_name（参数被 **kwargs 吞掉），这里补齐
+        if not hasattr(self, "_quota_name"):
+            self._quota_name = kwargs.get("quota_name")
+
+    @property
+    def instance(self):
+        """当前作业实例。
+
+        pyodps 0.12.5+ 自带该属性，更早的版本只有私有的 _instance，
+        这里兼容 pyproject 里声明的下限（pyodps>=0.12.2.2）。
+        """
+        return getattr(super(), "instance", self._instance)
+
     def execute(self, operation, parameters=None, **kwargs):
         retry_times = 10
         for i in range(retry_times):

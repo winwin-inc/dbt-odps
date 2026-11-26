@@ -33,8 +33,10 @@ verify.py                # 运行并校验
 
 ## 怎么跑
 
-在仓库根目录执行。建议用生产同款的 dbt 运行环境（脚本自带 import 钩子，
-会让它加载本仓库 `src/` 下的适配器代码和宏，**不需要改动那个环境**）：
+在仓库根目录执行。用仓库的 `.venv`（dbt 1.9.4 + pyodps 0.12.2.2）或生产同款的 dbt 运行环境
+（dbt 1.9.8 + pyodps 0.12.5.1）都可以，两边都真实跑过。脚本自带 import 钩子，
+会让对应环境加载本仓库 `src/` 下的适配器代码和宏，**不需要改动环境**。
+下面以 dbt 运行环境为例（换成 `.venv/bin/python` 即用 `.venv`）：
 
 ```bash
 DBT_PY=~/.local/share/uv/envs/dbt/bin/python
@@ -101,15 +103,25 @@ custom_schema_model     default_dbt_schema_comment_custom   default_dbt_schema_c
 
 ## 已知环境问题
 
-- **仓库 `.venv` 跑不了这个适配器**：`uv.lock` 锁的是 pyodps 0.12.2.2，而适配器用到了
-  pyodps 0.12.5+ 才有的内部属性（`Cursor.instance`、`Connection._quota_name` 等）。
-  `pyproject.toml` 声明的下限是 `pyodps>=0.12.2.2`，与实际不符。请用 dbt 运行环境。
 - **连 MaxCompute 报 `SignatureNotMatch`**：先怀疑凭据被 shell 里已有的 `ODPS_*`
   环境变量污染（见上面的说明），而不是 AccessKey 失效。本项目的 `load_env` 已做覆盖。
 
+## pyodps 版本兼容
+
+适配器用到的 `Cursor.instance`、`Connection._quota_name`、`Cursor._quota_name` 都是
+pyodps 0.12.5 才有的，而 `pyproject.toml` 声明的下限是 `pyodps>=0.12.2.2`。
+`wrapper.py` 里对此做了兜底，保证声明范围内的版本都能用；同时把传给游标的 hints
+复制了一份——旧版 pyodps 的 `Cursor.execute` 会直接 `update` 这个 dict，
+不复制的话单条 SQL 的 hints 会泄漏到同一连接的后续 SQL。
+
 ## 最近一次真实 MaxCompute 验证
 
-2026-11-26，项目 `zhidou_hz_dev`，dbt 1.9.8 + pyodps 0.12.5.1，适配器为本仓库代码：
+2026-11-26，项目 `zhidou_hz_dev`，适配器为本仓库代码。两套环境结果一致：
+
+| 环境 | 结果 |
+|---|---|
+| dbt 1.9.8 + pyodps 0.12.5.1（dbt 运行环境） | 21 条 SQL，三方一致 |
+| dbt 1.9.4 + pyodps 0.12.2.2（仓库 `.venv`） | 21 条 SQL，三方一致 |
 
 ```
 default_schema_model    default                           default                           default                           OK
@@ -117,5 +129,3 @@ default_view_model      default                           default               
 with_sql_header         default_dbt_schema_comment_custom default_dbt_schema_comment_custom default_dbt_schema_comment_custom OK
 custom_schema_model     default_dbt_schema_comment_custom default_dbt_schema_comment_custom default_dbt_schema_comment_custom OK
 ```
-
-21 条 SQL，三方一致；表也确实建在了对应的 schema 里。

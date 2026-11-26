@@ -16,10 +16,9 @@ schema 写进去供血缘采集使用。本脚本拦截真正交给 pyodps（即
                                            （dbt 默认的 generate_schema_name 会把
                                              自定义 schema 生成为 <target>_<custom>）
 
-用法（在仓库根目录执行）。建议直接用生产同款的 dbt 运行环境：适配器依赖
-pyodps 0.12.5+ 的内部属性（Cursor.instance、Connection._quota_name 等），
-而仓库 .venv 锁的 pyodps 0.12.2.2 跑不起来。脚本自带 import 钩子，
-会让那个环境加载本仓库 src/ 下的适配器代码和宏，不需要改动环境本身。
+用法（在仓库根目录执行）。用仓库的 .venv（dbt 1.9.4 + pyodps 0.12.2.2）或生产同款的
+dbt 运行环境（dbt 1.9.8 + pyodps 0.12.5.1）都可以。脚本自带 import 钩子，
+会让所用环境加载本仓库 src/ 下的适配器代码和宏，不需要改动环境本身。
 
     DBT_PY=~/.local/share/uv/envs/dbt/bin/python
 
